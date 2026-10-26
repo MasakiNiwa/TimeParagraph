@@ -46,6 +46,14 @@ export async function createAndOpenDocument(partial?: Partial<Omit<TPDocument, '
   useDocumentStore.getState().load(doc);
 }
 
+/** 取り込んだ原稿を保存して開く */
+export async function importAndOpenDocument(doc: TPDocument) {
+  await flushSave();
+  await saveDocument(doc);
+  setCurrentId(doc.id);
+  useDocumentStore.getState().load(doc);
+}
+
 export async function deleteDocument(id: string) {
   await db.documents.delete(id);
   if (useDocumentStore.getState().doc?.id === id) {

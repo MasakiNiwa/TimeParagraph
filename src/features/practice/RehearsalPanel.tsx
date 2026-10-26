@@ -4,8 +4,9 @@ import {
   IconPlayerPlayFilled,
   IconPlayerStopFilled,
   IconPlayerTrackNextFilled,
+  IconPresentation,
 } from '@tabler/icons-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { formatDuration } from '@/domain/format';
 import { useEstimator } from '@/features/estimation/useEstimator';
 import {
@@ -20,6 +21,7 @@ import {
   useRehearsalStore,
 } from '@/features/rehearsal/rehearsalStore';
 import { useWakeLock } from '@/lib/useWakeLock';
+import { PresenterView } from './PresenterView';
 import { Prompter } from './Prompter';
 import { RehearsalHistory } from './RehearsalHistory';
 import { RehearsalResult } from './RehearsalResult';
@@ -60,6 +62,8 @@ export function RehearsalPanel() {
   const { method, unitsPerMinute } = useEstimator();
   const state = useRehearsalStore();
   const active = state.status === 'running' || state.status === 'paused';
+  const [presenter, setPresenter] = useState(false);
+  const closePresenter = useCallback(() => setPresenter(false), []);
   useTicker(state.status === 'running');
   useRehearsalKeys(active);
   useWakeLock(active);
@@ -116,9 +120,22 @@ export function RehearsalPanel() {
               </Text>
               <Text className={classes.timer}>{formatDuration(estTotal)}</Text>
             </div>
-            <Button size="md" leftSection={<IconPlayerPlayFilled size={18} />} onClick={start}>
-              {state.status === 'finished' ? 'もう一度' : 'リハーサル開始'}
-            </Button>
+            <Group gap="xs" wrap="nowrap">
+              <Button
+                size="md"
+                variant="default"
+                leftSection={<IconPresentation size={18} />}
+                onClick={() => {
+                  start();
+                  setPresenter(true);
+                }}
+              >
+                発表モード
+              </Button>
+              <Button size="md" leftSection={<IconPlayerPlayFilled size={18} />} onClick={start}>
+                {state.status === 'finished' ? 'もう一度' : '開始'}
+              </Button>
+            </Group>
           </Group>
         ) : (
           <Stack gap={8}>
@@ -178,6 +195,14 @@ export function RehearsalPanel() {
                   <IconPlayerPlayFilled size={18} />
                 )}
               </Button>
+              <Button
+                size="md"
+                variant="default"
+                onClick={() => setPresenter(true)}
+                aria-label="発表モード"
+              >
+                <IconPresentation size={18} />
+              </Button>
               <Button size="md" variant="default" onClick={finishRehearsal} aria-label="ここで終了">
                 <IconPlayerStopFilled size={18} />
               </Button>
@@ -186,6 +211,7 @@ export function RehearsalPanel() {
         )}
       </div>
       <RehearsalHistory docId={doc.id} />
+      {presenter && active && <PresenterView onClose={closePresenter} />}
     </Stack>
   );
 }
