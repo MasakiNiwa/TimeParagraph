@@ -7,6 +7,7 @@ import {
   IconDatabase,
   IconHeart,
   IconKeyboard,
+  IconMicrophone,
 } from '@tabler/icons-react';
 import { CollapsibleSections } from '@/components/CollapsibleSections';
 import { PageContainer } from '@/components/PageContainer';
@@ -120,6 +121,27 @@ function Estimation() {
   );
 }
 
+function Practice() {
+  return (
+    <Stack gap="xs">
+      <Text size="sm">下部(PC では左)の「練習」から、原稿を見ながら練習できます。</Text>
+      <List size="sm" spacing="xs">
+        <List.Item>
+          <b>リハーサル(計測)</b>:自分で声に出して話し、段落を話し終えるたびに「次へ」(スペースキー
+          /
+          →)を押します。段落ごとの実際の時間を計測し、推定との差と「あなたの話す速さ」を表示します。
+          「この速さを設定に反映」を押すと、以後の推定に使われます。P キーで一時停止/再開できます。
+        </List.Item>
+        <List.Item>
+          <b>読み上げ</b>
+          :ブラウザの音声合成で原稿を読み上げます。段落を押すとそこから読み上げます。声と速さを選べます(声の種類はお使いの端末によって異なります)。
+        </List.Item>
+        <List.Item>練習中は、対応している端末では画面が自動で消えないようにします。</List.Item>
+      </List>
+    </Stack>
+  );
+}
+
 function DataStorage() {
   return (
     <Text size="sm">
@@ -163,6 +185,12 @@ export function HelpPage() {
       <CollapsibleSections
         sections={[
           { id: 'usage', title: '使い方', icon: IconBook, content: <Usage /> },
+          {
+            id: 'practice',
+            title: '練習(リハーサル・読み上げ)',
+            icon: IconMicrophone,
+            content: <Practice />,
+          },
           {
             id: 'shortcuts',
             title: 'キーボードショートカット',

@@ -11,7 +11,9 @@ import {
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { IconHelpCircle, IconMoon, IconSun } from '@tabler/icons-react';
+import { useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
+import { startPersistence } from '@/features/editor/persistence';
 import { APP_NAME } from '@/lib/appInfo';
 import classes from './AppLayout.module.css';
 import { navItems } from './routes';
@@ -41,6 +43,9 @@ function ColorSchemeToggle() {
 
 export function AppLayout() {
   const { pathname } = useLocation();
+  useEffect(() => {
+    void startPersistence();
+  }, []);
   const isMobile = useMediaQuery('(max-width: 48em)', false, { getInitialValueInEffect: false });
 
   return (

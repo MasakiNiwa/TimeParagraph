@@ -43,7 +43,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           react: ['react', 'react-dom', 'react-router', 'react-router-dom'],
-          mantine: ['@mantine/core', '@mantine/hooks', '@mantine/modals'],
+          mantine: ['@mantine/core', '@mantine/hooks', '@mantine/modals', '@mantine/notifications'],
           data: ['dexie', 'dexie-react-hooks', 'zod', 'zustand', 'zundo'],
           dnd: ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/modifiers', '@dnd-kit/utilities'],
         },

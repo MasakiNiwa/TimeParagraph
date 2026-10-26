@@ -22,6 +22,14 @@ export const SettingsSchema = z.object({
     /** パラグラフ間の間(秒) */
     paragraphPauseSec: z.number().min(0).max(30).catch(1),
   }),
+  speech: section({
+    /** 読み上げの声(SpeechSynthesisVoice.voiceURI)。空なら日本語の既定の声 */
+    voiceURI: z.string().catch(''),
+    /** 読み上げ速度(1 = 標準) */
+    rate: z.number().min(0.5).max(2).catch(1),
+    /** 見出しも読み上げる */
+    readHeadings: z.boolean().catch(false),
+  }),
   editor: section({
     fontSize: z.enum(['sm', 'md', 'lg']).catch('md'),
   }),

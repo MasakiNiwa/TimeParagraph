@@ -17,7 +17,7 @@ import { BulkInputModal } from './components/BulkInputModal';
 import { DocumentsModal } from './components/DocumentsModal';
 import { SummaryBar } from './components/SummaryBar';
 import { redo, undo, useDocumentStore } from './documentStore';
-import { createAndOpenDocument, startPersistence } from './persistence';
+import { createAndOpenDocument } from './persistence';
 import classes from './EditorPage.module.css';
 
 function confirmClear() {
@@ -57,9 +57,6 @@ export function EditorPage() {
   const [docsOpened, docsModal] = useDisclosure(false);
   const [bulkOpened, bulkModal] = useDisclosure(false);
 
-  useEffect(() => {
-    void startPersistence();
-  }, []);
   useUndoShortcuts();
   useMorphAnalysis(doc?.blocks);
 
