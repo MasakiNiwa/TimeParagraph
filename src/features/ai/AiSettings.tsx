@@ -1,46 +1,14 @@
-import {
-  Anchor,
-  Autocomplete,
-  Button,
-  Group,
-  PasswordInput,
-  SegmentedControl,
-  Stack,
-  Text,
-} from '@mantine/core';
-import { notifications } from '@mantine/notifications';
-import { IconRefresh } from '@tabler/icons-react';
-import { useState } from 'react';
+import { Anchor, Button, Group, PasswordInput, SegmentedControl, Stack, Text } from '@mantine/core';
 import { useSettingsStore } from '@/features/settings/settingsStore';
 import { useApiKeyStore } from './apiKeys';
+import { ModelPicker } from './ModelPicker';
 import { aiProviders, type AiProviderId } from './providers';
 
 export function AiSettings() {
   const { settings, update } = useSettingsStore();
   const { keys, setKey, clearAll } = useApiKeyStore();
   const provider = aiProviders[settings.ai.provider];
-  const model = settings.ai[provider.modelSetting];
-  const [models, setModels] = useState<Partial<Record<AiProviderId, string[]>>>({});
-  const [loading, setLoading] = useState(false);
   const key = keys[provider.id] ?? '';
-
-  const fetchModels = async () => {
-    setLoading(true);
-    try {
-      const list = await provider.listModels(key);
-      setModels((m) => ({ ...m, [provider.id]: list }));
-      notifications.show({ message: `${list.length} 件のモデルを取得しました` });
-    } catch (e) {
-      notifications.show({
-        color: 'red',
-        message: `モデル一覧を取得できませんでした: ${e instanceof Error ? e.message : e}`,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const options = [...new Set([...(models[provider.id] ?? []), ...provider.suggestedModels])];
 
   return (
     <Stack gap="lg">
@@ -76,26 +44,10 @@ export function AiSettings() {
         onChange={(e) => setKey(provider.id, e.currentTarget.value)}
         autoComplete="off"
       />
-      <Group align="flex-end" wrap="nowrap" gap="xs">
-        <Autocomplete
-          flex={1}
-          label="モデル"
-          description="一覧から選ぶか、モデル名を直接入力します"
-          data={options}
-          value={model}
-          onChange={(v) => update({ ai: { [provider.modelSetting]: v } })}
-          maxDropdownHeight={280}
-        />
-        <Button
-          variant="default"
-          leftSection={<IconRefresh size={16} />}
-          onClick={fetchModels}
-          loading={loading}
-          disabled={!key}
-        >
-          一覧を取得
-        </Button>
-      </Group>
+      <ModelPicker
+        label="モデル"
+        description="一覧から選ぶ(入力して絞り込み)か、鉛筆ボタンでモデル名を直接入力します。🔄 で最新の一覧を取得します。"
+      />
       <Stack gap={4}>
         <Text size="xs" c="dimmed">
           ・API キーはこのブラウザ内(localStorage)にのみ保存され、選んだ AI

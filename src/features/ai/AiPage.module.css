@@ -1,22 +1,58 @@
+/* 画面の高さいっぱいに広げ、メッセージ部分だけをスクロールさせる */
+.page {
+  display: flex;
+  flex-direction: column;
+  max-width: 860px;
+  margin: 0 auto;
+  height: calc(
+    100dvh - var(--app-shell-header-height, 56px) - var(--app-shell-footer-offset, 0rem) -
+      var(--mantine-spacing-md) * 2
+  );
+}
+
+.toolbar {
+  padding-bottom: 8px;
+  border-bottom: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-5));
+}
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+}
+
 .messages {
   display: flex;
   flex-direction: column;
-  gap: var(--mantine-spacing-sm);
+  gap: var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-md) 2px;
+  min-height: 100%;
+}
+
+.suggestion {
+  padding: 10px 12px;
+  border-radius: var(--mantine-radius-md);
+  border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+  transition: border-color 120ms ease;
+
+  &:hover {
+    border-color: var(--mantine-color-calm-5);
+  }
 }
 
 .user {
   align-self: flex-end;
   max-width: 85%;
-  padding: 8px 12px;
-  border-radius: var(--mantine-radius-lg);
+  padding: 8px 14px;
+  border-radius: 18px 18px 4px 18px;
   background: light-dark(var(--mantine-color-calm-0), var(--mantine-color-dark-5));
   white-space: pre-wrap;
+  line-height: 1.7;
 }
 
 .assistant {
-  max-width: 100%;
-  padding: 4px 2px;
-  line-height: 1.75;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
 
   & p {
     margin: 0 0 0.6em;
@@ -62,13 +98,23 @@
 }
 
 .composer {
-  position: sticky;
-  bottom: calc(var(--app-shell-footer-offset, 0rem) + 8px);
-  z-index: 5;
-  padding: 8px;
-  border-radius: var(--mantine-radius-lg);
-  background: light-dark(rgba(255, 255, 255, 0.96), rgba(43, 47, 54, 0.96));
-  backdrop-filter: blur(6px);
-  border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-5));
-  box-shadow: 0 4px 16px light-dark(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.3));
+  padding-top: 8px;
+}
+
+.inputBox {
+  padding: 8px 8px 8px 14px;
+  border-radius: 20px;
+  border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+  box-shadow: 0 2px 10px light-dark(rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.25));
+  transition: border-color 120ms ease;
+
+  &:focus-within {
+    border-color: light-dark(var(--mantine-color-calm-4), var(--mantine-color-calm-7));
+  }
+}
+
+.input {
+  font-size: var(--mantine-font-size-md);
+  line-height: 1.7;
 }
