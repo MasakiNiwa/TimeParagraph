@@ -1,0 +1,9 @@
+html,
+body {
+  overscroll-behavior-y: none;
+}
+
+body {
+  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-7));
+  -webkit-tap-highlight-color: transparent;
+}

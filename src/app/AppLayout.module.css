@@ -1,0 +1,38 @@
+.header {
+  backdrop-filter: blur(6px);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+}
+
+.main {
+  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-7));
+  min-height: 100dvh;
+}
+
+.bottomNav {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.bottomNavInner {
+  display: flex;
+  height: 100%;
+}
+
+.bottomNavItem {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-size: var(--mantine-font-size-xs);
+  color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-2));
+
+  &[data-active] {
+    color: light-dark(var(--mantine-color-calm-7), var(--mantine-color-calm-3));
+    font-weight: 600;
+  }
+}
