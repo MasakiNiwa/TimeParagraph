@@ -1,4 +1,4 @@
-import { Anchor, Badge, Card, Group, List, Stack, Text, Title } from '@mantine/core';
+import { Anchor, Badge, Card, Code, Group, List, Stack, Table, Text, Title } from '@mantine/core';
 import {
   IconBook,
   IconBrandGithub,
@@ -6,6 +6,7 @@ import {
   IconClock,
   IconDatabase,
   IconHeart,
+  IconKeyboard,
 } from '@tabler/icons-react';
 import { CollapsibleSections } from '@/components/CollapsibleSections';
 import { PageContainer } from '@/components/PageContainer';
@@ -48,8 +49,44 @@ function Usage() {
     <List size="sm" spacing="xs">
       <List.Item>話す内容をパラグラフ(段落)ごとに書いていきます。</List.Item>
       <List.Item>各パラグラフの文字数から、話すのにかかる時間を自動で推定します。</List.Item>
-      <List.Item>全パラグラフの合計時間を見ながら、内容と時間配分を調整できます。</List.Item>
+      <List.Item>
+        上部のバーに合計時間が表示されます。各段落には「何分何秒から話し始めるか」も表示されます。
+      </List.Item>
+      <List.Item>「見出し」を入れると、見出しごとの合計時間も確認できます。</List.Item>
+      <List.Item>左端のつまみをドラッグすると、段落を並べ替えられます。</List.Item>
+      <List.Item>
+        段落の「…」メニューから、段落ごとの話す速さ・間・メモ(話さない補足)を設定できます。
+      </List.Item>
+      <List.Item>
+        右上の「︙」メニューから、原稿の切り替えや、テキストの一括入力(空行で段落を区切る)ができます。
+      </List.Item>
     </List>
+  );
+}
+
+function Shortcuts() {
+  const rows = [
+    ['Ctrl + Enter', 'カーソル位置で段落を分割(末尾なら新しい段落を追加)'],
+    ['Backspace(段落の先頭で)', '前の段落と結合/空の段落を削除'],
+    ['Alt + ↑ / ↓', '段落を上下に移動'],
+    ['Ctrl + Z', '元に戻す'],
+    ['Ctrl + Shift + Z / Ctrl + Y', 'やり直す'],
+  ];
+  return (
+    <Table>
+      <Table.Tbody>
+        {rows.map(([key, desc]) => (
+          <Table.Tr key={key}>
+            <Table.Td>
+              <Code>{key}</Code>
+            </Table.Td>
+            <Table.Td>
+              <Text size="sm">{desc}</Text>
+            </Table.Td>
+          </Table.Tr>
+        ))}
+      </Table.Tbody>
+    </Table>
   );
 }
 
@@ -108,6 +145,12 @@ export function HelpPage() {
       <CollapsibleSections
         sections={[
           { id: 'usage', title: '使い方', icon: IconBook, content: <Usage /> },
+          {
+            id: 'shortcuts',
+            title: 'キーボードショートカット',
+            icon: IconKeyboard,
+            content: <Shortcuts />,
+          },
           {
             id: 'estimation',
             title: '時間の推定について',

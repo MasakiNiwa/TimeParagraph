@@ -36,7 +36,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           react: ['react', 'react-dom', 'react-router', 'react-router-dom'],
-          mantine: ['@mantine/core', '@mantine/hooks'],
+          mantine: ['@mantine/core', '@mantine/hooks', '@mantine/modals'],
         },
       },
     },
