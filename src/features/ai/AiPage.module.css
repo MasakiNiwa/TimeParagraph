@@ -1,0 +1,74 @@
+.messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-sm);
+}
+
+.user {
+  align-self: flex-end;
+  max-width: 85%;
+  padding: 8px 12px;
+  border-radius: var(--mantine-radius-lg);
+  background: light-dark(var(--mantine-color-calm-0), var(--mantine-color-dark-5));
+  white-space: pre-wrap;
+}
+
+.assistant {
+  max-width: 100%;
+  padding: 4px 2px;
+  line-height: 1.75;
+
+  & p {
+    margin: 0 0 0.6em;
+  }
+
+  & ul,
+  & ol {
+    margin: 0 0 0.6em;
+    padding-left: 1.4em;
+  }
+
+  & h1,
+  & h2,
+  & h3,
+  & h4 {
+    font-size: 1em;
+    margin: 0.8em 0 0.4em;
+  }
+}
+
+.proposal {
+  border-left: 3px solid var(--mantine-color-calm-5);
+}
+
+.edit {
+  padding: 6px 0;
+  border-top: 1px dashed light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+}
+
+.before {
+  white-space: pre-wrap;
+  text-decoration: line-through;
+  color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-2));
+  padding: 2px 8px;
+  border-left: 2px solid light-dark(var(--mantine-color-red-3), var(--mantine-color-red-9));
+  margin-bottom: 4px;
+}
+
+.after {
+  white-space: pre-wrap;
+  padding: 2px 8px;
+  border-left: 2px solid light-dark(var(--mantine-color-teal-4), var(--mantine-color-teal-8));
+}
+
+.composer {
+  position: sticky;
+  bottom: calc(var(--app-shell-footer-offset, 0rem) + 8px);
+  z-index: 5;
+  padding: 8px;
+  border-radius: var(--mantine-radius-lg);
+  background: light-dark(rgba(255, 255, 255, 0.96), rgba(43, 47, 54, 0.96));
+  backdrop-filter: blur(6px);
+  border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-5));
+  box-shadow: 0 4px 16px light-dark(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.3));
+}

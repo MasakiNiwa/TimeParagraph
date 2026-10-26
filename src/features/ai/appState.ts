@@ -1,0 +1,76 @@
+import { estimateDocument } from '@/domain/estimate';
+import type { Block } from '@/domain/document';
+import { APP_NAME, APP_VERSION } from '@/lib/appInfo';
+import type { AnalysisContext } from '@/features/analysis/types';
+import type { Settings } from '@/features/settings/settingsSchema';
+
+const r1 = (n: number) => Math.round(n * 10) / 10;
+
+/**
+ * AI に渡すアプリの状態。AI は数値を推測せず、ここに含まれる値とツールの結果を使う。
+ * フィールドを増やすときは後方互換を保つ(AI のプロンプトはこの形を前提にしている)。
+ */
+export function buildAppState(ctx: AnalysisContext, settings: Settings) {
+  const { doc, estimate, sections } = ctx;
+  const target = doc.targetDurationSec;
+  return {
+    app: { name: APP_NAME, version: APP_VERSION },
+    document: {
+      title: doc.title,
+      targetDurationSec: target,
+      totalEstimatedSec: r1(estimate.totalSec),
+      diffFromTargetSec: target === null ? null : r1(estimate.totalSec - target),
+      paragraphCount: estimate.paragraphCount,
+    },
+    estimation: {
+      method: settings.estimation.method,
+      unit: ctx.estimator.unitLabel,
+      unitsPerMinute: ctx.unitsPerMinute,
+      paragraphPauseSec: settings.estimation.paragraphPauseSec,
+    },
+    sections: sections.map((s) => ({
+      title: s.title || null,
+      startSec: r1(s.startSec),
+      totalSec: r1(s.totalSec),
+    })),
+    blocks: doc.blocks.map((b, index) => {
+      const e = estimate.byId.get(b.id);
+      return {
+        id: b.id,
+        index,
+        kind: b.kind,
+        text: b.text,
+        ...(b.kind === 'paragraph'
+          ? {
+              units: r1(e?.units ?? 0),
+              speakSec: r1(e?.speakSec ?? 0),
+              pauseAfterSec: r1(e?.pauseSec ?? 0),
+              startSec: r1(e?.startSec ?? 0),
+              speedFactor: b.speedFactor,
+              note: b.note || undefined,
+            }
+          : {}),
+      };
+    }),
+    rehearsals: ctx.rehearsals.slice(0, 3).map((r) => ({
+      date: new Date(r.startedAt).toISOString(),
+      totalSec: r1(r.totalSec),
+      estimatedTotalSec: r1(r.estimatedTotalSec),
+      completed: r.completed,
+    })),
+  };
+}
+
+export type AppState = ReturnType<typeof buildAppState>;
+
+/** ブロック列の合計時間を現在の推定方式で計算する */
+export function totalSecOf(ctx: AnalysisContext, settings: Settings, blocks: Block[]): number {
+  return estimateDocument(
+    { blocks },
+    {
+      unitsPerMinute: ctx.unitsPerMinute,
+      paragraphPauseSec: settings.estimation.paragraphPauseSec,
+    },
+    ctx.estimator,
+  ).totalSec;
+}
