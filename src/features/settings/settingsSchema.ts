@@ -13,8 +13,12 @@ function section<T extends z.ZodRawShape>(shape: T) {
  */
 export const SettingsSchema = z.object({
   estimation: section({
+    /** 推定方式: 文字数 / 拍数(簡易) / 拍数(形態素解析) */
+    method: z.enum(['chars', 'kana', 'morph']).catch('chars'),
     /** 1分あたりに話す文字数(日本語のアナウンサーでおよそ 300 字/分) */
     charsPerMinute: z.number().min(50).max(1000).catch(300),
+    /** 1分あたりに話す拍(モーラ)数。ニュースの読み上げでおよそ 420〜480 拍/分 */
+    morasPerMinute: z.number().min(100).max(1500).catch(420),
     /** パラグラフ間の間(秒) */
     paragraphPauseSec: z.number().min(0).max(30).catch(1),
   }),

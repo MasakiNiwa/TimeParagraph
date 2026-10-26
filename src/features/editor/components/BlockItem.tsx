@@ -26,6 +26,7 @@ interface Props {
   number: number | null;
   estimate: BlockEstimate | undefined;
   sectionSec: number | undefined;
+  unitLabel: string;
   handle: DragHandleProps;
 }
 
@@ -99,7 +100,7 @@ function DragHandle({ handle }: { handle: DragHandleProps }) {
   );
 }
 
-function ParagraphItem({ block, index, count, number, estimate, handle }: Props) {
+function ParagraphItem({ block, index, count, number, estimate, unitLabel, handle }: Props) {
   const fontSize = useSettings().editor.fontSize;
   const ref = useRef<HTMLTextAreaElement>(null);
   const [settingsOpened, settings] = useDisclosure(false);
@@ -140,7 +141,8 @@ function ParagraphItem({ block, index, count, number, estimate, handle }: Props)
               {formatDuration(estimate?.startSec ?? 0)} から
             </Text>
             <Text size="xs" c="dimmed">
-              {estimate?.units ?? 0}字
+              {Math.round(estimate?.units ?? 0)}
+              {unitLabel}
             </Text>
             {block.speedFactor !== 1 && (
               <Badge size="xs" variant="outline" color="gray" tt="none">

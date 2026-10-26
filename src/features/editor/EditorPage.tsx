@@ -11,6 +11,7 @@ import {
 } from '@tabler/icons-react';
 import { useEffect } from 'react';
 import { PageContainer } from '@/components/PageContainer';
+import { useMorphAnalysis } from '@/features/estimation/useEstimator';
 import { BlockList } from './components/BlockList';
 import { BulkInputModal } from './components/BulkInputModal';
 import { DocumentsModal } from './components/DocumentsModal';
@@ -60,6 +61,7 @@ export function EditorPage() {
     void startPersistence();
   }, []);
   useUndoShortcuts();
+  useMorphAnalysis(doc?.blocks);
 
   if (!doc) {
     return (

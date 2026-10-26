@@ -3,7 +3,7 @@ import { createBlock, textToBlocks } from './document';
 import { countSpokenChars, estimateDocument, summarizeSections } from './estimate';
 import { formatDuration, formatDurationJa } from './format';
 
-const opts = { charsPerMinute: 300, paragraphPauseSec: 1 };
+const opts = { unitsPerMinute: 300, paragraphPauseSec: 1 };
 
 describe('countSpokenChars', () => {
   it('空白と括弧を除いて数える', () => {

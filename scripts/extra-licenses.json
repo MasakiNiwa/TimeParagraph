@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "name": "mecab-ipadic (kuromoji 同梱の辞書データ)",
+    "version": "2.7.0-20070801",
+    "license": "IPADIC License",
+    "author": "Nara Institute of Science and Technology",
+    "url": "https://github.com/takuyaa/kuromoji.js",
+    "textFrom": "node_modules/kuromoji/NOTICE.md"
+  }
+]

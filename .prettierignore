@@ -3,3 +3,4 @@ node_modules
 src/generated
 package-lock.json
 public/THIRD_PARTY_LICENSES.txt
+public/dict
