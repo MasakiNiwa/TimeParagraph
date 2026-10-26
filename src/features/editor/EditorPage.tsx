@@ -15,6 +15,7 @@ import { useMorphAnalysis } from '@/features/estimation/useEstimator';
 import { BlockList } from './components/BlockList';
 import { BulkInputModal } from './components/BulkInputModal';
 import { DocumentsModal } from './components/DocumentsModal';
+import { ExchangeMenuItems } from './components/ExchangeMenuItems';
 import { SummaryBar } from './components/SummaryBar';
 import { redo, undo, useDocumentStore } from './documentStore';
 import { createAndOpenDocument } from './persistence';
@@ -84,7 +85,7 @@ export function EditorPage() {
           classNames={{ input: classes.title }}
           aria-label="原稿のタイトル"
         />
-        <Menu position="bottom-end" shadow="md" width={220}>
+        <Menu position="bottom-end" shadow="md" width={260}>
           <Menu.Target>
             <ActionIcon variant="subtle" color="gray" size="lg" aria-label="原稿のメニュー">
               <IconDotsVertical size={20} />
@@ -103,6 +104,8 @@ export function EditorPage() {
             <Menu.Item leftSection={<IconTextPlus size={16} />} onClick={bulkModal.open}>
               テキストから一括入力
             </Menu.Item>
+            <Menu.Divider />
+            <ExchangeMenuItems />
           </Menu.Dropdown>
         </Menu>
       </Group>

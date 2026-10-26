@@ -17,6 +17,7 @@ import { startPersistence } from '@/features/editor/persistence';
 import { APP_NAME } from '@/lib/appInfo';
 import classes from './AppLayout.module.css';
 import { navItems } from './routes';
+import { UpdatePrompt } from './UpdatePrompt';
 
 function isActive(pathname: string, path: string) {
   return path === '/' ? pathname === '/' : pathname.startsWith(path);
@@ -118,6 +119,7 @@ export function AppLayout() {
           })}
         </nav>
       </AppShell.Footer>
+      <UpdatePrompt />
     </AppShell>
   );
 }
