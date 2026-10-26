@@ -1,0 +1,15 @@
+.row {
+  border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-5));
+  border-radius: var(--mantine-radius-md);
+  padding-right: 6px;
+}
+
+.open {
+  padding: 8px 12px;
+  min-width: 0;
+  border-radius: var(--mantine-radius-md);
+
+  &[data-current] {
+    border-left: 3px solid var(--mantine-color-calm-5);
+  }
+}

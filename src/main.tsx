@@ -1,6 +1,7 @@
 import '@mantine/core/styles.css';
 import './global.css';
 import { localStorageColorSchemeManager, MantineProvider } from '@mantine/core';
+import { ModalsProvider } from '@mantine/modals';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
@@ -15,7 +16,9 @@ createRoot(document.getElementById('root')!).render(
       defaultColorScheme="auto"
       colorSchemeManager={colorSchemeManager}
     >
-      <App />
+      <ModalsProvider>
+        <App />
+      </ModalsProvider>
     </MantineProvider>
   </StrictMode>,
 );
