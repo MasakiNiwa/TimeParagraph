@@ -12,6 +12,9 @@ const SettingsPage = lazy(() =>
 const PracticePage = lazy(() =>
   import('@/features/practice/PracticePage').then((m) => ({ default: m.PracticePage })),
 );
+const AnalysisPage = lazy(() =>
+  import('@/features/analysis/AnalysisPage').then((m) => ({ default: m.AnalysisPage })),
+);
 const HelpPage = lazy(() =>
   import('@/features/help/HelpPage').then((m) => ({ default: m.HelpPage })),
 );
@@ -41,6 +44,14 @@ const router = createHashRouter([
         element: (
           <Lazy>
             <PracticePage />
+          </Lazy>
+        ),
+      },
+      {
+        path: '/analysis',
+        element: (
+          <Lazy>
+            <AnalysisPage />
           </Lazy>
         ),
       },

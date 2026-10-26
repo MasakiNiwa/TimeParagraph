@@ -1,7 +1,7 @@
 {
   "name": "timeparagraph",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "パラグラフ単位で話す時間と内容を考えるエディタ",
   "license": "MIT",
   "type": "module",
@@ -37,6 +37,7 @@
     "comlink": "^4.4.2",
     "dexie": "^4.4.7",
     "dexie-react-hooks": "^4.4.0",
+    "echarts": "^6.1.0",
     "kuromoji": "^0.1.2",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
