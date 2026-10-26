@@ -9,6 +9,9 @@ import { NotFoundPage } from '@/pages/NotFoundPage';
 const SettingsPage = lazy(() =>
   import('@/features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 );
+const PracticePage = lazy(() =>
+  import('@/features/practice/PracticePage').then((m) => ({ default: m.PracticePage })),
+);
 const HelpPage = lazy(() =>
   import('@/features/help/HelpPage').then((m) => ({ default: m.HelpPage })),
 );
@@ -33,6 +36,14 @@ const router = createHashRouter([
     element: <AppLayout />,
     children: [
       { path: '/', element: <EditorPage /> },
+      {
+        path: '/practice',
+        element: (
+          <Lazy>
+            <PracticePage />
+          </Lazy>
+        ),
+      },
       {
         path: '/settings',
         element: (

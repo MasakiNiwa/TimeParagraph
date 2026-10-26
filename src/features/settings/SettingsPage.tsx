@@ -3,6 +3,8 @@ import {
   Group,
   NumberInput,
   Radio,
+  Select,
+  Switch,
   SegmentedControl,
   Slider,
   Stack,
@@ -10,10 +12,12 @@ import {
   useMantineColorScheme,
   type MantineColorScheme,
 } from '@mantine/core';
-import { IconClock, IconDatabase, IconPalette } from '@tabler/icons-react';
+import { IconClock, IconDatabase, IconPalette, IconVolume } from '@tabler/icons-react';
 import { CollapsibleSections } from '@/components/CollapsibleSections';
 import { PageContainer } from '@/components/PageContainer';
 import { methodInfo, type EstimationMethod } from '@/features/estimation/useEstimator';
+import { speechSupported } from '@/features/speech/speechStore';
+import { useVoices } from '@/features/speech/useVoices';
 import { useSettingsStore } from './settingsStore';
 
 function SpeedField({
@@ -118,6 +122,55 @@ function EstimationSettings() {
   );
 }
 
+function SpeechSettings() {
+  const { settings, update } = useSettingsStore();
+  const voices = useVoices();
+  const { voiceURI, rate, readHeadings } = settings.speech;
+  if (!speechSupported) {
+    return (
+      <Text size="sm" c="dimmed">
+        お使いのブラウザは読み上げに対応していません。
+      </Text>
+    );
+  }
+  return (
+    <Stack gap="lg">
+      <Select
+        label="声"
+        placeholder="既定の声"
+        description="端末にインストールされている声から選べます"
+        data={voices.map((v) => ({ value: v.voiceURI, label: `${v.name}(${v.lang})` }))}
+        value={voiceURI || null}
+        onChange={(v) => update({ speech: { voiceURI: v ?? '' } })}
+        clearable
+      />
+      <div>
+        <Text size="sm" fw={500} mb={4}>
+          読み上げ速度(×{rate.toFixed(1)})
+        </Text>
+        <Slider
+          min={0.5}
+          max={2}
+          step={0.1}
+          value={rate}
+          onChange={(v) => update({ speech: { rate: v } })}
+          marks={[
+            { value: 0.5, label: '0.5' },
+            { value: 1, label: '1.0' },
+            { value: 2, label: '2.0' },
+          ]}
+          mb="md"
+        />
+      </div>
+      <Switch
+        label="見出しも読み上げる"
+        checked={readHeadings}
+        onChange={(e) => update({ speech: { readHeadings: e.currentTarget.checked } })}
+      />
+    </Stack>
+  );
+}
+
 function DisplaySettings() {
   const { colorScheme, setColorScheme } = useMantineColorScheme();
   const { settings, update } = useSettingsStore();
@@ -188,6 +241,7 @@ export function SettingsPage() {
             icon: IconClock,
             content: <EstimationSettings />,
           },
+          { id: 'speech', title: '読み上げ', icon: IconVolume, content: <SpeechSettings /> },
           { id: 'display', title: '表示', icon: IconPalette, content: <DisplaySettings /> },
           { id: 'data', title: 'データ', icon: IconDatabase, content: <DataSettings /> },
         ]}

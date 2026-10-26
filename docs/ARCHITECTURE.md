@@ -60,6 +60,12 @@ scripts/          ビルド用スクリプト
 - 同じ段落への連続入力は 1 秒以内なら 1 つの履歴にまとめます。
 - `features/editor/persistence.ts` が起動時の読み込みと変更の自動保存(400ms デバウンス)を担当します。
 
+## 練習(リハーサル・読み上げ)
+
+- `features/rehearsal/rehearsalStore.ts`:段落ごとのラップ計測(一時停止対応、`performance.now` ベース)。終了時に IndexedDB の `rehearsals` テーブルへ保存します。
+- `domain/rehearsal.ts`:記録のスキーマと、実測からの話速の補正(`calibrateSpeed`)。
+- `features/speech/speechStore.ts`:Web Speech API による読み上げ。ブラウザによっては長い発話が途中で止まるため、文単位(`domain/sentences.ts`)で発話します。一時停止は停止+位置の記憶で実装しています。
+
 ## ライセンス管理
 
 - アプリ本体: MIT(`LICENSE`)
