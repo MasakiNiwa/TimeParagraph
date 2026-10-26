@@ -66,6 +66,18 @@ scripts/          ビルド用スクリプト
 - `domain/rehearsal.ts`:記録のスキーマと、実測からの話速の補正(`calibrateSpeed`)。
 - `features/speech/speechStore.ts`:Web Speech API による読み上げ。ブラウザによっては長い発話が途中で止まるため、文単位(`domain/sentences.ts`)で発話します。一時停止は停止+位置の記憶で実装しています。
 
+## 分析ツール
+
+`features/analysis/` に、登録制の分析ツールを置いています。
+
+1. `features/analysis/tools/` に `AnalysisTool`(`types.ts`)を実装したファイルを作る
+2. `tools/index.ts` の `analysisTools` に追加する
+
+これだけで分析ページのタブに表示されます。ツールは共通の `AnalysisContext`(原稿・推定・時間ツリー・段落統計・リハーサル履歴)を受け取ります。
+`summarize` を実装すると、`buildAnalysisSnapshot` 経由で構造化データとして AI 連携に使われます。
+
+計算は `domain/analysis.ts`(UI 非依存・テスト済み)、グラフは `components/EChart.tsx`(ECharts の必要なモジュールだけを登録)を使います。
+
 ## ライセンス管理
 
 - アプリ本体: MIT(`LICENSE`)

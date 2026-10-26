@@ -2,6 +2,7 @@ import { Anchor, Badge, Card, Code, Group, List, Stack, Table, Text, Title } fro
 import {
   IconBook,
   IconBrandGithub,
+  IconChartBar,
   IconCertificate,
   IconClock,
   IconDatabase,
@@ -142,6 +143,33 @@ function Practice() {
   );
 }
 
+function Analysis() {
+  return (
+    <Stack gap="xs">
+      <Text size="sm">「分析」ページでは、原稿とリハーサルの記録を分析できます。</Text>
+      <List size="sm" spacing="xs">
+        <List.Item>
+          <b>時間の内訳</b>:全体 → セクション → 段落 →
+          文の順に掘り下げて(ドリルダウン)、どこに時間を使っているかを確認できます。棒や表の名前を押すと一段深く、上部のパンくずで戻れます。
+        </List.Item>
+        <List.Item>
+          <b>段落のバランス</b>:段落ごとの長さを比べ、中央値より極端に長い・短い段落を示します。
+        </List.Item>
+        <List.Item>
+          <b>長い文</b>:一息で話すには長い文を見つけます。
+        </List.Item>
+        <List.Item>
+          <b>リハーサルの比較</b>:回ごとの合計時間の推移と、段落ごとの推定と実測の差を表示します。
+        </List.Item>
+      </List>
+      <Text size="sm">
+        「分析結果を JSON でコピー」で、分析結果を構造化データとして取り出せます(AI
+        連携でも使います)。
+      </Text>
+    </Stack>
+  );
+}
+
 function DataStorage() {
   return (
     <Text size="sm">
@@ -190,6 +218,12 @@ export function HelpPage() {
             title: '練習(リハーサル・読み上げ)',
             icon: IconMicrophone,
             content: <Practice />,
+          },
+          {
+            id: 'analysis',
+            title: '分析',
+            icon: IconChartBar,
+            content: <Analysis />,
           },
           {
             id: 'shortcuts',
