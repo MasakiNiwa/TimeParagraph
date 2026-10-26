@@ -30,6 +30,13 @@ export const SettingsSchema = z.object({
     /** 見出しも読み上げる */
     readHeadings: z.boolean().catch(false),
   }),
+  ai: section({
+    /** 使う AI サービス */
+    provider: z.enum(['google', 'openai', 'anthropic']).catch('google'),
+    googleModel: z.string().min(1).catch('gemini-flash-latest'),
+    openaiModel: z.string().min(1).catch('gpt-5.5'),
+    anthropicModel: z.string().min(1).catch('claude-sonnet-5-5'),
+  }),
   editor: section({
     fontSize: z.enum(['sm', 'md', 'lg']).catch('md'),
   }),

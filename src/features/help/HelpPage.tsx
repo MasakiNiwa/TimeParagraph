@@ -9,6 +9,7 @@ import {
   IconHeart,
   IconKeyboard,
   IconMicrophone,
+  IconSparkles,
 } from '@tabler/icons-react';
 import { CollapsibleSections } from '@/components/CollapsibleSections';
 import { PageContainer } from '@/components/PageContainer';
@@ -170,11 +171,40 @@ function Analysis() {
   );
 }
 
+function AiHelp() {
+  return (
+    <Stack gap="xs">
+      <Text size="sm">
+        AI は任意の機能です。使わなくても、エディタ・練習・分析はすべて利用できます。Google
+        Gemini・OpenAI・Anthropic Claude に対応し、モデルも選べます。
+      </Text>
+      <List size="sm" spacing="xs">
+        <List.Item>
+          「設定 → AI」で API キーを登録します。Google AI Studio の無料枠で試すのがおすすめです。
+        </List.Item>
+        <List.Item>
+          AI
+          は原稿の状態(段落・推定時間・目標・分析結果)を構造化データとして受け取り、時間の計算や分析はアプリの機能をツールとして呼び出して行います。AI
+          が時間を推測で答えることはありません。
+        </List.Item>
+        <List.Item>
+          原稿の変更は「編集案」として表示されます。変更前後の文章と合計時間を確認し、「適用する」を押したときだけ原稿に反映されます(エディタの「元に戻す」で戻せます)。
+        </List.Item>
+        <List.Item>
+          API キーはこのブラウザにのみ保存され、選んだ AI サービスへ直接送信されます。AI
+          を使うと原稿の内容がそのサービスに送られます。
+        </List.Item>
+      </List>
+    </Stack>
+  );
+}
+
 function DataStorage() {
   return (
     <Text size="sm">
       入力した内容や設定は、お使いのブラウザ内(ローカルストレージ / IndexedDB)にのみ保存され、
-      サーバーには送信されません。
+      サーバーには送信されません。ただし AI アシスタントを使ったときは、原稿の内容が選んだ AI
+      サービスに送信されます。
     </Text>
   );
 }
@@ -224,6 +254,12 @@ export function HelpPage() {
             title: '分析',
             icon: IconChartBar,
             content: <Analysis />,
+          },
+          {
+            id: 'ai',
+            title: 'AI アシスタント',
+            icon: IconSparkles,
+            content: <AiHelp />,
           },
           {
             id: 'shortcuts',

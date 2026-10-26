@@ -15,6 +15,7 @@ const PracticePage = lazy(() =>
 const AnalysisPage = lazy(() =>
   import('@/features/analysis/AnalysisPage').then((m) => ({ default: m.AnalysisPage })),
 );
+const AiPage = lazy(() => import('@/features/ai/AiPage').then((m) => ({ default: m.AiPage })));
 const HelpPage = lazy(() =>
   import('@/features/help/HelpPage').then((m) => ({ default: m.HelpPage })),
 );
@@ -52,6 +53,14 @@ const router = createHashRouter([
         element: (
           <Lazy>
             <AnalysisPage />
+          </Lazy>
+        ),
+      },
+      {
+        path: '/ai',
+        element: (
+          <Lazy>
+            <AiPage />
           </Lazy>
         ),
       },

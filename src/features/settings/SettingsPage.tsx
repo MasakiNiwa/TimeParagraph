@@ -12,7 +12,14 @@ import {
   useMantineColorScheme,
   type MantineColorScheme,
 } from '@mantine/core';
-import { IconClock, IconDatabase, IconPalette, IconVolume } from '@tabler/icons-react';
+import {
+  IconClock,
+  IconDatabase,
+  IconPalette,
+  IconSparkles,
+  IconVolume,
+} from '@tabler/icons-react';
+import { AiSettings } from '@/features/ai/AiSettings';
 import { CollapsibleSections } from '@/components/CollapsibleSections';
 import { PageContainer } from '@/components/PageContainer';
 import { methodInfo, type EstimationMethod } from '@/features/estimation/useEstimator';
@@ -242,6 +249,7 @@ export function SettingsPage() {
             content: <EstimationSettings />,
           },
           { id: 'speech', title: '読み上げ', icon: IconVolume, content: <SpeechSettings /> },
+          { id: 'ai', title: 'AI', icon: IconSparkles, content: <AiSettings /> },
           { id: 'display', title: '表示', icon: IconPalette, content: <DisplaySettings /> },
           { id: 'data', title: 'データ', icon: IconDatabase, content: <DataSettings /> },
         ]}

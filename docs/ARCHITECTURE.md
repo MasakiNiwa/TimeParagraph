@@ -78,6 +78,20 @@ scripts/          ビルド用スクリプト
 
 計算は `domain/analysis.ts`(UI 非依存・テスト済み)、グラフは `components/EChart.tsx`(ECharts の必要なモジュールだけを登録)を使います。
 
+## AI 連携
+
+`features/ai/` にあります。AI は任意で、API キーがなければ AI ページに設定の案内を表示するだけです。
+
+- **プロバイダー**(`providers.ts`):Vercel AI SDK で Google Gemini / OpenAI / Anthropic Claude を同じ形で扱います。ブラウザから各 API を直接呼び出し、モデル一覧も各 API から取得します。
+- **構造化データ**(`appState.ts`):原稿・推定・セクション・リハーサルを JSON にしてシステムプロンプトに埋め込みます。
+- **ツール**(`tools.ts`):AI はアプリの機能をツールとして呼び出します。
+  - `get_document_state`:最新の状態を取得
+  - `estimate_text`:テキストの話す時間を、アプリの推定方式で計算
+  - `run_analysis`:分析ツール(`AnalysisTool.summarize`)を実行
+  - `propose_edits`:編集案(`domain/edits.ts` の `BlockEdit`)を作成。前後の合計時間はアプリが計算
+- 編集案はユーザーが「適用する」を押したときだけ `applyEdits` で原稿に反映されます(1 回の「元に戻す」で戻せます)。
+- API キーは設定とは別の localStorage キー(`timeparagraph:ai-keys`)に保存します。
+
 ## ライセンス管理
 
 - アプリ本体: MIT(`LICENSE`)
