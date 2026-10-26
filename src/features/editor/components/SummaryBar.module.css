@@ -10,16 +10,26 @@
   box-shadow: 0 2px 8px light-dark(rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.2));
 }
 
+.stats {
+  min-width: 0;
+
+  & [data-hide-xs] {
+    @media (max-width: $mantine-breakpoint-xs) {
+      display: none;
+    }
+  }
+
+  & [data-hide-sm] {
+    @media (max-width: $mantine-breakpoint-sm) {
+      display: none;
+    }
+  }
+}
+
 .stat {
   display: flex;
   flex-direction: column;
   line-height: 1.2;
-
-  @media (max-width: $mantine-breakpoint-xs) {
-    &[data-hide-xs] {
-      display: none;
-    }
-  }
 }
 
 .total {
@@ -30,4 +40,12 @@
 
 .num {
   font-variant-numeric: tabular-nums;
+
+  &[data-diff] {
+    color: light-dark(var(--mantine-color-calm-7), var(--mantine-color-calm-3));
+  }
+
+  &[data-over] {
+    color: light-dark(var(--mantine-color-orange-8), var(--mantine-color-orange-4));
+  }
 }

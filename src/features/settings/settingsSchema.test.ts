@@ -18,3 +18,12 @@ describe('parseSettings', () => {
     expect(parseSettings('broken')).toEqual(defaultSettings);
   });
 });
+
+describe('estimation method', () => {
+  it('既定は文字数、未知の方式は既定に戻す', () => {
+    expect(defaultSettings.estimation.method).toBe('chars');
+    expect(defaultSettings.estimation.morasPerMinute).toBe(420);
+    expect(parseSettings({ estimation: { method: 'unknown' } }).estimation.method).toBe('chars');
+    expect(parseSettings({ estimation: { method: 'morph' } }).estimation.method).toBe('morph');
+  });
+});

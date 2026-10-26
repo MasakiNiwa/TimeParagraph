@@ -6,3 +6,4 @@ coverage
 # ビルド時に自動生成されるファイル
 src/generated/
 public/THIRD_PARTY_LICENSES.txt
+public/dict/

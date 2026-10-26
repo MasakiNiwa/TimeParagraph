@@ -49,7 +49,7 @@ function Sortable({ id, children }: { id: string; children: (h: DragHandleProps)
 }
 
 export function BlockList({ blocks }: { blocks: Block[] }) {
-  const { estimate, sections } = useEstimate();
+  const { estimate, sections, unitLabel } = useEstimate();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -89,6 +89,7 @@ export function BlockList({ blocks }: { blocks: Block[] }) {
                   number={numbers[i]}
                   estimate={estimate.byId.get(block.id)}
                   sectionSec={sectionSec.get(block.id)}
+                  unitLabel={unitLabel}
                   handle={handle}
                 />
               )}

@@ -49,7 +49,15 @@ for (const [path, meta] of Object.entries(lock.packages)) {
   });
 }
 
-const entries = [...byName.values(), ...extras].sort((a, b) => a.name.localeCompare(b.name));
+// textFrom が指定されていればそのファイルの内容をライセンス本文にする
+const extraEntries = extras.map(({ textFrom, ...e }) => ({
+  author: '',
+  url: '',
+  text: textFrom ? readFileSync(join(root, textFrom), 'utf-8').trim() : '',
+  ...e,
+}));
+
+const entries = [...byName.values(), ...extraEntries].sort((a, b) => a.name.localeCompare(b.name));
 
 mkdirSync(join(root, 'src/generated'), { recursive: true });
 writeFileSync(join(root, 'src/generated/licenses.json'), JSON.stringify(entries, null, 2));

@@ -2,6 +2,7 @@ import {
   Button,
   Group,
   NumberInput,
+  Radio,
   SegmentedControl,
   Slider,
   Stack,
@@ -12,41 +13,96 @@ import {
 import { IconClock, IconDatabase, IconPalette } from '@tabler/icons-react';
 import { CollapsibleSections } from '@/components/CollapsibleSections';
 import { PageContainer } from '@/components/PageContainer';
+import { methodInfo, type EstimationMethod } from '@/features/estimation/useEstimator';
 import { useSettingsStore } from './settingsStore';
+
+function SpeedField({
+  label,
+  hint,
+  unit,
+  value,
+  range,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  unit: string;
+  value: number;
+  range: [number, number];
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div>
+      <Text size="sm" fw={500}>
+        {label}
+      </Text>
+      <Text size="xs" c="dimmed" mb="xs">
+        {hint}
+      </Text>
+      <Group align="center" wrap="nowrap">
+        <Slider
+          flex={1}
+          min={range[0]}
+          max={range[1]}
+          step={10}
+          value={value}
+          onChange={onChange}
+          label={(v) => `${v} ${unit}`}
+          aria-label={label}
+        />
+        <NumberInput
+          w={120}
+          min={50}
+          max={1500}
+          suffix={` ${unit}`}
+          value={value}
+          onChange={(v) => typeof v === 'number' && onChange(v)}
+        />
+      </Group>
+    </div>
+  );
+}
 
 function EstimationSettings() {
   const { settings, update } = useSettingsStore();
-  const { charsPerMinute, paragraphPauseSec } = settings.estimation;
+  const { method, charsPerMinute, morasPerMinute, paragraphPauseSec } = settings.estimation;
   return (
     <Stack gap="lg">
-      <div>
-        <Text size="sm" fw={500}>
-          話す速さ(1分あたりの文字数)
-        </Text>
-        <Text size="xs" c="dimmed" mb="xs">
-          目安:ゆっくり 250 / 標準 300 / 速め 350
-        </Text>
-        <Group align="center" wrap="nowrap">
-          <Slider
-            flex={1}
-            min={150}
-            max={500}
-            step={10}
-            value={charsPerMinute}
-            onChange={(v) => update({ estimation: { charsPerMinute: v } })}
-            label={(v) => `${v} 字/分`}
-            aria-label="話す速さ"
-          />
-          <NumberInput
-            w={110}
-            min={50}
-            max={1000}
-            suffix=" 字/分"
-            value={charsPerMinute}
-            onChange={(v) => typeof v === 'number' && update({ estimation: { charsPerMinute: v } })}
-          />
-        </Group>
-      </div>
+      <Radio.Group
+        label="推定方式"
+        value={method}
+        onChange={(v) => update({ estimation: { method: v as EstimationMethod } })}
+      >
+        <Stack gap="sm" mt="xs">
+          {(Object.keys(methodInfo) as EstimationMethod[]).map((m) => (
+            <Radio
+              key={m}
+              value={m}
+              label={methodInfo[m].label}
+              description={methodInfo[m].description}
+            />
+          ))}
+        </Stack>
+      </Radio.Group>
+      {method === 'chars' ? (
+        <SpeedField
+          label="話す速さ(1分あたりの文字数)"
+          hint="目安:ゆっくり 250 / 標準 300 / 速め 350"
+          unit="字/分"
+          value={charsPerMinute}
+          range={[150, 500]}
+          onChange={(v) => update({ estimation: { charsPerMinute: v } })}
+        />
+      ) : (
+        <SpeedField
+          label="話す速さ(1分あたりの拍数)"
+          hint="目安:ゆっくり 360 / 標準 420 / 速め 480(拍 = かな 1 文字分の長さ)"
+          unit="拍/分"
+          value={morasPerMinute}
+          range={[250, 700]}
+          onChange={(v) => update({ estimation: { morasPerMinute: v } })}
+        />
+      )}
       <NumberInput
         label="パラグラフ間の間(秒)"
         description="パラグラフの切り替わりごとに加算する時間"

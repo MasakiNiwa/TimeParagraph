@@ -42,7 +42,16 @@ scripts/          ビルド用スクリプト
 
 ## 時間推定
 
-`src/domain/estimate.ts` の `Estimator` インターフェースで推定方式を差し替えられます(現在は文字数ベース)。
+`src/domain/estimate.ts` の `Estimator` インターフェースで推定方式を差し替えられます。
+
+| 方式             | 実装                                                                     | 単位 |
+| ---------------- | ------------------------------------------------------------------------ | ---- |
+| 文字数           | `countSpokenChars`                                                       | 字   |
+| 拍数(簡易)       | `estimateMoraHeuristic`(`domain/mora.ts`)                                | 拍   |
+| 拍数(形態素解析) | `workers/morph.worker.ts`(kuromoji)+ `features/estimation/morphStore.ts` | 拍   |
+
+形態素解析は Web Worker(Comlink)で実行し、結果はテキストをキーにキャッシュします。解析が終わるまでは簡易推定で代用するため、UI は常に即座に更新されます。
+辞書は `npm run copy-dict` で `public/dict/kuromoji/` にコピーされます(Git 管理外)。
 `estimateDocument` が段落ごとの所要時間・開始時刻・合計を、`summarizeSections` が見出しごとの合計を返します。
 
 ## 状態と履歴
@@ -60,4 +69,4 @@ scripts/          ビルド用スクリプト
 
   を生成します。
 
-- npm 以外から取り込んだ資産(辞書データなど)は `scripts/extra-licenses.json` に手動で追記します。
+- npm 以外の資産や、パッケージに同梱された別ライセンスのデータ(IPADIC 辞書など)は `scripts/extra-licenses.json` に追記します(`textFrom` で本文のファイルを指定可能)。

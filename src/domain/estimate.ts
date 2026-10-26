@@ -1,14 +1,16 @@
 import type { Block, TPDocument } from './document';
+import { estimateMoraHeuristic } from './mora';
 
 /** 推定に使う設定値 */
 export interface EstimateOptions {
-  charsPerMinute: number;
+  /** 1 分あたりに話す単位数(文字数またはモーラ数) */
+  unitsPerMinute: number;
   paragraphPauseSec: number;
 }
 
 /**
- * 話す時間の推定方式。Phase 2 以降でモーラ数ベースなどを追加できるよう差し替え可能にしている。
- * `units` は推定の基になった数(文字数・モーラ数など)。
+ * 話す時間の推定方式。`countUnits` が返す単位数(文字数・モーラ数など)を話速で割って時間にする。
+ * 方式を増やすときは Estimator を追加して `estimationMethods` に登録する。
  */
 export interface Estimator {
   id: string;
@@ -30,6 +32,13 @@ export const charEstimator: Estimator = {
   label: '文字数',
   unitLabel: '字',
   countUnits: countSpokenChars,
+};
+
+export const kanaEstimator: Estimator = {
+  id: 'kana',
+  label: '拍数(簡易)',
+  unitLabel: '拍',
+  countUnits: estimateMoraHeuristic,
 };
 
 export interface BlockEstimate {
@@ -56,7 +65,7 @@ export function isSpoken(block: Block): boolean {
 export function estimateDocument(
   doc: Pick<TPDocument, 'blocks'>,
   opts: EstimateOptions,
-  estimator: Estimator = charEstimator,
+  estimator: Pick<Estimator, 'countUnits'> = charEstimator,
 ): DocumentEstimate {
   const spokenIdx = doc.blocks.map((b, i) => (isSpoken(b) ? i : -1)).filter((i) => i >= 0);
   const lastSpoken = spokenIdx[spokenIdx.length - 1] ?? -1;
@@ -67,7 +76,7 @@ export function estimateDocument(
     const startSec = t;
     if (!isSpoken(b)) return { id: b.id, units: 0, speakSec: 0, pauseSec: 0, startSec };
     const units = estimator.countUnits(b.text);
-    const speakSec = ((units / opts.charsPerMinute) * 60) / b.speedFactor;
+    const speakSec = ((units / opts.unitsPerMinute) * 60) / b.speedFactor;
     // 最後のパラグラフの後には間を入れない
     const pauseSec = i === lastSpoken ? 0 : (b.pauseAfterSec ?? opts.paragraphPauseSec);
     t += speakSec + pauseSec;
