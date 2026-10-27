@@ -2,6 +2,7 @@ import { Group, Loader } from '@mantine/core';
 import { lazy, Suspense, type ReactNode } from 'react';
 import { createHashRouter, RouterProvider } from 'react-router-dom';
 import { AppLayout } from '@/app/AppLayout';
+import { RouteError } from '@/app/RouteError';
 import { EditorPage } from '@/features/editor/EditorPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 
@@ -39,48 +40,54 @@ const router = createHashRouter([
   {
     element: <AppLayout />,
     children: [
-      { path: '/', element: <EditorPage /> },
       {
-        path: '/practice',
-        element: (
-          <Lazy>
-            <PracticePage />
-          </Lazy>
-        ),
+        // ページ内のエラーはここで受け止め、ヘッダとナビゲーションは表示したままにする
+        errorElement: <RouteError />,
+        children: [
+          { path: '/', element: <EditorPage /> },
+          {
+            path: '/practice',
+            element: (
+              <Lazy>
+                <PracticePage />
+              </Lazy>
+            ),
+          },
+          {
+            path: '/analysis',
+            element: (
+              <Lazy>
+                <AnalysisPage />
+              </Lazy>
+            ),
+          },
+          {
+            path: '/ai',
+            element: (
+              <Lazy>
+                <AiPage />
+              </Lazy>
+            ),
+          },
+          {
+            path: '/settings',
+            element: (
+              <Lazy>
+                <SettingsPage />
+              </Lazy>
+            ),
+          },
+          {
+            path: '/help',
+            element: (
+              <Lazy>
+                <HelpPage />
+              </Lazy>
+            ),
+          },
+          { path: '*', element: <NotFoundPage /> },
+        ],
       },
-      {
-        path: '/analysis',
-        element: (
-          <Lazy>
-            <AnalysisPage />
-          </Lazy>
-        ),
-      },
-      {
-        path: '/ai',
-        element: (
-          <Lazy>
-            <AiPage />
-          </Lazy>
-        ),
-      },
-      {
-        path: '/settings',
-        element: (
-          <Lazy>
-            <SettingsPage />
-          </Lazy>
-        ),
-      },
-      {
-        path: '/help',
-        element: (
-          <Lazy>
-            <HelpPage />
-          </Lazy>
-        ),
-      },
-      { path: '*', element: <NotFoundPage /> },
     ],
   },
 ]);
