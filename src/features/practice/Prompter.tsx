@@ -11,6 +11,8 @@ export interface PrompterState {
   currentId: string | null;
   /** 計測済みの段落の実測(秒) */
   actualById?: Map<string, number>;
+  /** 強調中の段落に添える案内 */
+  currentHint?: string;
 }
 
 /** 原稿を大きな文字で表示し、現在の段落を強調する */
@@ -71,6 +73,11 @@ export function Prompter({
               <Text size="xs" c="dimmed">
                 {formatDuration(e?.startSec ?? 0)} から ・ 推定 {formatDuration(est)}
               </Text>
+              {current && state.currentHint && (
+                <Badge size="sm" variant="filled" tt="none">
+                  {state.currentHint}
+                </Badge>
+              )}
               {actual !== undefined && (
                 <Badge
                   size="sm"

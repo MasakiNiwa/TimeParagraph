@@ -1,11 +1,11 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { applyEdits, BlockEditSchema, validateEdits } from '@/domain/edits';
+import { applyEdits, validateEdits, type BlockEdit } from '@/domain/edits';
 import { newId } from '@/domain/document';
 import { analysisTools } from '@/features/analysis/tools';
 import type { AnalysisContext } from '@/features/analysis/types';
 import type { Settings } from '@/features/settings/settingsSchema';
-import { buildAppState, totalSecOf } from './appState';
+import { buildAppState, refToIndex, totalSecOf } from './appState';
 import { useAiStore, type Proposal } from './aiStore';
 
 const r1 = (n: number) => Math.round(n * 10) / 10;
@@ -76,16 +76,54 @@ export function createAiTools(
 
     propose_edits: tool({
       description:
-        '原稿の編集案を作成する。原稿は直接変更されず、ユーザーが画面で確認して適用する。結果として、適用前後の合計推定時間(秒)が返る。blockId は get_document_state の id を使う。',
+        '原稿の編集案を作成する。原稿は直接変更されず、ユーザーが画面で確認して適用する。結果として、適用前後の合計推定時間(秒)が返る。対象のブロックは ref(B1, B2, ...)で指定する。',
       inputSchema: z.object({
         summary: z.string().describe('編集案の要約(ユーザーに表示する)'),
-        edits: z.array(BlockEditSchema).min(1),
+        edits: z
+          .array(
+            z.object({
+              op: z
+                .enum(['replace', 'insert_after', 'delete'])
+                .describe('replace: 書き換え / insert_after: ref の後に追加 / delete: 削除'),
+              ref: z
+                .string()
+                .describe(
+                  '対象ブロックの ref(例: B3)。insert_after で先頭に追加するときは "START"',
+                ),
+              text: z.string().describe('replace / insert_after の新しい本文。delete では空文字'),
+              kind: z
+                .enum(['paragraph', 'heading'])
+                .describe('insert_after で追加するブロックの種類。それ以外は paragraph'),
+              reason: z.string().describe('この変更の理由(短く)'),
+            }),
+          )
+          .min(1),
       }),
-      execute: async ({ summary, edits }) => {
+      execute: async ({ summary, edits: aiEdits }) => {
         const ctx = requireCtx();
         const settings = getSettings();
+        const count = ctx.doc.blocks.length;
+        const refErrors: string[] = [];
+        const edits: BlockEdit[] = aiEdits.map((e, i) => {
+          const start = e.op === 'insert_after' && e.ref.trim().toUpperCase() === 'START';
+          const idx = start ? -1 : refToIndex(e.ref, count);
+          if (!start && idx < 0)
+            refErrors.push(`edits[${i}]: ref "${e.ref}" は存在しません(B1〜B${count})`);
+          return {
+            op: e.op,
+            blockId: start ? null : (ctx.doc.blocks[idx]?.id ?? e.ref),
+            text: e.op === 'delete' ? undefined : e.text,
+            kind: e.op === 'insert_after' ? e.kind : undefined,
+            reason: e.reason || undefined,
+          };
+        });
         const validation = validateEdits(ctx.doc.blocks, edits);
-        if (!validation.ok) return { ok: false, errors: validation.errors };
+        if (refErrors.length || !validation.ok)
+          return {
+            ok: false,
+            errors: refErrors.length ? refErrors : validation.errors,
+            hint: 'ref と text を確認して、もう一度 propose_edits を呼んでください。',
+          };
         const beforeSec = totalSecOf(ctx, settings, ctx.doc.blocks);
         const afterSec = totalSecOf(ctx, settings, applyEdits(ctx.doc.blocks, edits));
         const proposal: Proposal = {

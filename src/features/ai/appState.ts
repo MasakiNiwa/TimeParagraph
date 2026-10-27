@@ -7,6 +7,19 @@ import type { Settings } from '@/features/settings/settingsSchema';
 const r1 = (n: number) => Math.round(n * 10) / 10;
 
 /**
+ * AI に見せるブロックの参照名(B1, B2, ...)。長い UUID は AI が書き写し間違えやすいため、
+ * 短い参照名でやり取りし、アプリ側で id に変換する。
+ */
+export const blockRef = (index: number) => `B${index + 1}`;
+
+/** 参照名からブロックの位置を求める。見つからなければ -1 */
+export function refToIndex(ref: string, count: number): number {
+  const m = /^B(\d+)$/i.exec(ref.trim());
+  const i = m ? Number(m[1]) - 1 : -1;
+  return i >= 0 && i < count ? i : -1;
+}
+
+/**
  * AI に渡すアプリの状態。AI は数値を推測せず、ここに含まれる値とツールの結果を使う。
  * フィールドを増やすときは後方互換を保つ(AI のプロンプトはこの形を前提にしている)。
  */
@@ -36,8 +49,7 @@ export function buildAppState(ctx: AnalysisContext, settings: Settings) {
     blocks: doc.blocks.map((b, index) => {
       const e = estimate.byId.get(b.id);
       return {
-        id: b.id,
-        index,
+        ref: blockRef(index),
         kind: b.kind,
         text: b.text,
         ...(b.kind === 'paragraph'

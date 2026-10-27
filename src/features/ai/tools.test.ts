@@ -54,7 +54,7 @@ describe('AI tools', () => {
     const state = buildAppState(ctx, defaultSettings);
     expect(state.document.totalEstimatedSec).toBeCloseTo(91);
     expect(state.document.diffFromTargetSec).toBeCloseTo(31);
-    expect(state.blocks[0].id).toBe(ctx.doc.blocks[0].id);
+    expect(state.blocks.map((b) => b.ref)).toEqual(['B1', 'B2']);
   });
 
   it('estimate_text はアプリの推定方式で秒数を返す', async () => {
@@ -63,10 +63,12 @@ describe('AI tools', () => {
   });
 
   it('propose_edits は原稿を変えずに提案と前後の時間を返す', async () => {
-    const id = ctx.doc.blocks[0].id;
     const r = await run(tools.propose_edits, {
       summary: '短縮',
-      edits: [{ op: 'replace', blockId: id, text: 'あ'.repeat(150) }],
+      edits: [
+        { op: 'replace', ref: 'B1', text: 'あ'.repeat(150), kind: 'paragraph', reason: '' },
+        { op: 'insert_after', ref: 'START', text: '見出し', kind: 'heading', reason: '' },
+      ],
     });
     expect(r.ok).toBe(true);
     expect(r.beforeSec).toBeCloseTo(91);
@@ -74,13 +76,18 @@ describe('AI tools', () => {
     expect(proposals).toEqual([r.proposalId]);
     expect(useAiStore.getState().proposals[r.proposalId].status).toBe('pending');
     expect(ctx.doc.blocks[0].text).toBe('あ'.repeat(300));
+    // ref はアプリ側でブロックの id に変換される
+    const edits = useAiStore.getState().proposals[r.proposalId].edits;
+    expect(edits[0].blockId).toBe(ctx.doc.blocks[0].id);
+    expect(edits[1].blockId).toBeNull();
   });
 
-  it('propose_edits は不正な blockId を拒否する', async () => {
+  it('propose_edits は存在しない ref を拒否する', async () => {
     const r = await run(tools.propose_edits, {
       summary: 'x',
-      edits: [{ op: 'delete', blockId: 'missing' }],
+      edits: [{ op: 'delete', ref: 'B9', text: '', kind: 'paragraph', reason: '' }],
     });
+    expect(r.errors[0]).toContain('B9');
     expect(r.ok).toBe(false);
     expect(proposals).toEqual([]);
   });

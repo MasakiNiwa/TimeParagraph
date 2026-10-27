@@ -12,6 +12,14 @@
   min-height: 100dvh;
 }
 
+/* 下部ナビはスマホのジェスチャーバー(セーフエリア)の分だけ高くなるため、その分も余白に含める */
+.main[class] {
+  padding-bottom: calc(
+    var(--app-shell-footer-offset, 0rem) + env(safe-area-inset-bottom, 0px) +
+      var(--mantine-spacing-xl)
+  );
+}
+
 .bottomNav {
   padding-bottom: env(safe-area-inset-bottom);
 }

@@ -108,25 +108,60 @@ export function finishRehearsal() {
   void finish(cur > 0.5 ? [...s.laps, cur] : s.laps, false);
 }
 
+/** 計測中・終了後を問わず、記録を保存せずに初期状態へ戻す */
 export function resetRehearsal() {
   useRehearsalStore.setState({ ...initial });
 }
 
-async function finish(lapSecs: number[], completed: boolean) {
-  const s = useRehearsalStore.getState();
-  const laps: Lap[] = lapSecs.map((actualSec, i) => ({ ...s.items[i], actualSec }));
-  const result: Rehearsal = {
+export type RehearsalMeta = NonNullable<RehearsalState['meta']>;
+
+/** 段落ごとの実測(秒)から記録を作る。リハーサルと読み上げ計測で共通 */
+export function buildRehearsal(
+  items: RehearsalItem[],
+  lapSecs: number[],
+  meta: RehearsalMeta | null,
+  options: {
+    startedAt: number;
+    completed: boolean;
+    source: 'manual' | 'speech';
+    speechRate?: number;
+  },
+): Rehearsal {
+  const laps: Lap[] = lapSecs.map((actualSec, i) => ({ ...items[i], actualSec }));
+  return {
     id: newId(),
-    docId: s.meta?.docId ?? '',
-    docTitle: s.meta?.docTitle ?? '',
-    startedAt: s.startedAt,
-    method: s.meta?.method ?? '',
-    unitsPerMinute: s.meta?.unitsPerMinute ?? 0,
+    docId: meta?.docId ?? '',
+    docTitle: meta?.docTitle ?? '',
+    startedAt: options.startedAt,
+    method: meta?.method ?? '',
+    unitsPerMinute: meta?.unitsPerMinute ?? 0,
     laps,
     totalSec: lapSecs.reduce((a, b) => a + b, 0),
     estimatedTotalSec: laps.reduce((a, l) => a + l.estimatedSec, 0),
-    completed,
+    completed: options.completed,
+    source: options.source,
+    speechRate: options.speechRate,
   };
+}
+
+export async function saveRehearsal(result: Rehearsal) {
+  if (result.laps.length > 0) await db.rehearsals.put(result);
+}
+
+/** 終了後の記録を破棄する(保存済みの記録も削除する) */
+export async function discardResult() {
+  const result = useRehearsalStore.getState().result;
+  resetRehearsal();
+  if (result) await deleteRehearsal(result.id);
+}
+
+async function finish(lapSecs: number[], completed: boolean) {
+  const s = useRehearsalStore.getState();
+  const result = buildRehearsal(s.items, lapSecs, s.meta, {
+    startedAt: s.startedAt,
+    completed,
+    source: 'manual',
+  });
   useRehearsalStore.setState({
     status: 'finished',
     laps: lapSecs,
@@ -134,7 +169,7 @@ async function finish(lapSecs: number[], completed: boolean) {
     segmentResumedAt: null,
     result,
   });
-  if (laps.length > 0) await db.rehearsals.put(result);
+  await saveRehearsal(result);
 }
 
 export async function listRehearsals(docId: string): Promise<Rehearsal[]> {

@@ -1,16 +1,17 @@
-import { Alert, Button, Group, Progress, Stack, Text } from '@mantine/core';
+import { Alert, Button, Group, Menu, Progress, Stack, Text } from '@mantine/core';
 import {
-  IconPlayerPauseFilled,
   IconPlayerPlayFilled,
-  IconPlayerStopFilled,
   IconPlayerTrackNextFilled,
   IconPresentation,
+  IconFlag,
+  IconTrash,
 } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { formatDuration } from '@/domain/format';
 import { useEstimator } from '@/features/estimation/useEstimator';
 import {
   currentSegmentSec,
+  discardResult,
   elapsedTotalSec,
   finishRehearsal,
   nextParagraph,
@@ -42,8 +43,11 @@ function useRehearsalKeys(active: boolean) {
   useEffect(() => {
     if (!active) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLElement && e.target.closest('input, textarea, select')) return;
-      if (e.key === ' ' || e.key === 'ArrowRight' || e.key === 'Enter') {
+      const target = e.target instanceof HTMLElement ? e.target : null;
+      if (target?.closest('input, textarea, select')) return;
+      // フォーカス中のボタンはスペースキーで自身が押されるので、ここでは横取りしない
+      if (e.key === ' ' && target?.closest('button, [role="button"]')) return;
+      if (e.key === ' ' || e.key === 'ArrowRight') {
         e.preventDefault();
         nextParagraph();
       } else if (e.key.toLowerCase() === 'p') {
@@ -95,12 +99,16 @@ export function RehearsalPanel() {
   return (
     <Stack gap="xs">
       {state.status === 'finished' && state.result && (
-        <RehearsalResult result={state.result} onClose={resetRehearsal} />
+        <RehearsalResult
+          result={state.result}
+          onClose={resetRehearsal}
+          onDiscard={() => void discardResult()}
+        />
       )}
       {state.status === 'idle' && (
         <Text size="sm" c="dimmed">
-          自分で声に出して話し、段落を話し終えるたびに「次へ」(スペースキー / →)を押します。
-          段落ごとの実際の時間を計測し、自分の話す速さを求めます。
+          「開始」を押したら自分で声に出して話し、段落を話し終えるたびに「次の段落へ」を押します(強調中の段落をタップ、またはスペースキー
+          / → でも進めます)。段落ごとの実際の時間を計測し、自分の話す速さを求めます。
         </Text>
       )}
       <Prompter
@@ -109,7 +117,15 @@ export function RehearsalPanel() {
         state={{
           currentId: current?.blockId ?? null,
           actualById: state.status === 'idle' ? undefined : actualById,
+          currentHint: active ? 'タップで次の段落へ' : undefined,
         }}
+        onSelect={
+          active
+            ? (id) => {
+                if (id === current?.blockId) nextParagraph();
+              }
+            : undefined
+        }
       />
       <div className={classes.dock}>
         {!active ? (
@@ -174,38 +190,49 @@ export function RehearsalPanel() {
             <Text size="xs" c="dimmed" className={classes.small}>
               この段落 {formatDuration(segSec)} / 推定 {formatDuration(current?.estimatedSec ?? 0)}
             </Text>
-            <Group gap="xs" wrap="nowrap">
+            <Button
+              fullWidth
+              size="lg"
+              leftSection={<IconPlayerTrackNextFilled size={20} />}
+              onClick={nextParagraph}
+            >
+              {state.index + 1 >= state.items.length ? '終了して結果を見る' : '次の段落へ'}
+            </Button>
+            <Group gap="xs" wrap="nowrap" grow>
               <Button
-                flex={1}
-                size="md"
-                leftSection={<IconPlayerTrackNextFilled size={18} />}
-                onClick={nextParagraph}
-              >
-                {state.index + 1 >= state.items.length ? '終了' : '次へ'}
-              </Button>
-              <Button
-                size="md"
+                size="xs"
                 variant="default"
                 onClick={state.status === 'running' ? pauseRehearsal : resumeRehearsal}
-                aria-label={state.status === 'running' ? '一時停止' : '再開'}
               >
-                {state.status === 'running' ? (
-                  <IconPlayerPauseFilled size={18} />
-                ) : (
-                  <IconPlayerPlayFilled size={18} />
-                )}
+                {state.status === 'running' ? '一時停止' : '再開'}
               </Button>
               <Button
-                size="md"
+                size="xs"
                 variant="default"
+
                 onClick={() => setPresenter(true)}
-                aria-label="発表モード"
               >
-                <IconPresentation size={18} />
+                発表モード
               </Button>
-              <Button size="md" variant="default" onClick={finishRehearsal} aria-label="ここで終了">
-                <IconPlayerStopFilled size={18} />
-              </Button>
+              <Menu position="top-end" shadow="md" withinPortal>
+                <Menu.Target>
+                  <Button size="xs" variant="default">
+                    終了・破棄
+                  </Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item leftSection={<IconFlag size={16} />} onClick={finishRehearsal}>
+                    ここまでで終了して保存
+                  </Menu.Item>
+                  <Menu.Item
+                    color="red"
+                    leftSection={<IconTrash size={16} />}
+                    onClick={resetRehearsal}
+                  >
+                    破棄する(保存しない)
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
             </Group>
           </Stack>
         )}

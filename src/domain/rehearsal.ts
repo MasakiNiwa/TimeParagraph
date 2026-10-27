@@ -29,6 +29,10 @@ export const RehearsalSchema = z.object({
   estimatedTotalSec: z.number(),
   /** 最後まで通したか(途中終了なら false) */
   completed: z.boolean(),
+  /** 計測方法: 自分で話した(manual)/ 読み上げで計測した(speech)。古い記録にはない */
+  source: z.enum(['manual', 'speech']).optional(),
+  /** 読み上げで計測したときの読み上げ速度 */
+  speechRate: z.number().optional(),
 });
 export type Rehearsal = z.infer<typeof RehearsalSchema>;
 

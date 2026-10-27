@@ -1,4 +1,13 @@
-import { Anchor, Button, Group, PasswordInput, SegmentedControl, Stack, Text } from '@mantine/core';
+import {
+  Anchor,
+  Button,
+  Group,
+  PasswordInput,
+  SegmentedControl,
+  Stack,
+  Switch,
+  Text,
+} from '@mantine/core';
 import { useSettingsStore } from '@/features/settings/settingsStore';
 import { useApiKeyStore } from './apiKeys';
 import { ModelPicker } from './ModelPicker';
@@ -47,6 +56,12 @@ export function AiSettings() {
       <ModelPicker
         label="モデル"
         description="一覧から選ぶ(入力して絞り込み)か、鉛筆ボタンでモデル名を直接入力します。🔄 で最新の一覧を取得します。"
+      />
+      <Switch
+        label="AI の思考過程を表示する"
+        description="対応しているモデルでは、考えている内容をリアルタイムに表示します"
+        checked={settings.ai.showThinking}
+        onChange={(e) => update({ ai: { showThinking: e.currentTarget.checked } })}
       />
       <Stack gap={4}>
         <Text size="xs" c="dimmed">
