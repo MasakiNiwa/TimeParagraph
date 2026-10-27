@@ -8,6 +8,7 @@ import {
   Group,
   Loader,
   ScrollArea,
+  SegmentedControl,
   Select,
   SimpleGrid,
   Stack,
@@ -41,6 +42,7 @@ import { ModelPicker } from './ModelPicker';
 import { quickPrompts } from './prompt';
 import { ProposalCard } from './ProposalCard';
 import { aiProviders, type AiProviderId } from './providers';
+import { effortLabels } from './effort';
 import { sendMessage, stopGenerating } from './runChat';
 import { toolLabels } from './tools';
 import classes from './AiPage.module.css';
@@ -281,6 +283,7 @@ function ChatToolbar({ canReset }: { canReset: boolean }) {
 export function AiPage() {
   const ctx = useAnalysisContext();
   const settings = useSettings();
+  const updateSettings = useSettingsStore((s) => s.update);
   const provider = aiProviders[settings.ai.provider];
   const hasKey = useApiKeyStore((s) => Boolean(s.keys[provider.id]));
   const { items, busy } = useAiStore();
@@ -370,9 +373,18 @@ export function AiPage() {
               aria-label="メッセージ"
             />
             <Group justify="space-between" align="center" gap="xs" wrap="nowrap">
-              <Text size="xs" c="dimmed" truncate>
-                {provider.label.split(' ').pop()} ・ {settings.ai[provider.modelSetting]}
-              </Text>
+              <Tooltip label="考える深さ(深いほど丁寧ですが時間がかかります)">
+                <SegmentedControl
+                  size="xs"
+                  value={settings.ai.effort}
+                  onChange={(v) =>
+                    updateSettings({ ai: { effort: v as typeof settings.ai.effort } })
+                  }
+                  data={Object.entries(effortLabels).map(([value, label]) => ({ value, label }))}
+                  aria-label="考える深さ"
+                  disabled={busy}
+                />
+              </Tooltip>
               {busy ? (
                 <Tooltip label="中断">
                   <ActionIcon
