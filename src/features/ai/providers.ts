@@ -41,7 +41,7 @@ export const aiProviders: Record<AiProviderId, AiProvider> = {
     keyUrl: 'https://aistudio.google.com/apikey',
     keyHint: 'Google AI Studio で無料の API キーを作成できます(無料枠あり)。',
     modelSetting: 'googleModel',
-    suggestedModels: ['gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-pro-latest'],
+    suggestedModels: ['gemini-flash-lite-latest', 'gemini-flash-latest', 'gemini-pro-latest'],
     createModel: (apiKey, modelId) => createGoogle({ apiKey })(modelId),
     thinkingOptions: { google: { thinkingConfig: { includeThoughts: true } } },
     listModels: async (apiKey) => {

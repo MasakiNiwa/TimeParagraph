@@ -33,7 +33,8 @@ export const SettingsSchema = z.object({
   ai: section({
     /** 使う AI サービス */
     provider: z.enum(['google', 'openai', 'anthropic']).catch('google'),
-    googleModel: z.string().min(1).catch('gemini-flash-latest'),
+    // 最新の flash は混雑や長い思考で数分かかることがあるため、既定は軽い flash-lite にする
+    googleModel: z.string().min(1).catch('gemini-flash-lite-latest'),
     openaiModel: z.string().min(1).catch('gpt-5.5'),
     anthropicModel: z.string().min(1).catch('claude-sonnet-5-5'),
     /** 対応しているモデルで思考過程を表示する */
