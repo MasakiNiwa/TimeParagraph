@@ -1,7 +1,7 @@
 {
   "name": "timeparagraph",
   "private": true,
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "パラグラフ単位で話す時間と内容を考えるエディタ",
   "license": "MIT",
   "type": "module",

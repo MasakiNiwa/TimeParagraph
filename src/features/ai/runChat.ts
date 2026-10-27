@@ -10,6 +10,8 @@ import { aiProviders } from './providers';
 import { createAiTools } from './tools';
 
 const MAX_STEPS = 8;
+/** 応答が始まるまで / 応答の途中で、これ以上なにも届かなければ打ち切る */
+const STALL_MS = 120_000;
 
 function errorMessage(e: unknown): string {
   const msg = e instanceof Error ? e.message : String(e);
@@ -19,6 +21,10 @@ function errorMessage(e: unknown): string {
     return `利用上限(無料枠など)に達しました。しばらく待ってから再度お試しください。(${msg})`;
   if (/404|not found|model/i.test(msg))
     return `モデルが見つかりません。モデルを選び直してください。(${msg})`;
+  if (/timeout|timed out|time out/i.test(msg))
+    return `AI から ${STALL_MS / 1000} 秒以上応答がなかったため、打ち切りました。「考える深さ」を「速さ優先」にするか、軽いモデル(flash-lite など)をお試しください。`;
+  if (/failed to fetch|networkerror|network error|load failed/i.test(msg))
+    return `通信が途中で切れました。電波の状態を確認して、もう一度お試しください。応答に時間がかかる場合は「考える深さ」を「速さ優先」にするか、軽いモデル(flash-lite など)をお試しください。(${msg})`;
   return msg;
 }
 
@@ -62,8 +68,13 @@ export async function sendMessage(text: string, getCtx: () => AnalysisContext | 
         () => useSettingsStore.getState().settings,
         (proposalId) => set((i) => ({ ...i, proposalIds: [...i.proposalIds, proposalId] })),
       ),
-      providerOptions: withThinking ? provider.thinkingOptions : undefined,
+      // 考える深さ。思考オプション非対応のモデルで失敗したときは、プロバイダーの既定に戻して再試行する
+      reasoning: withThinking ? settings.ai.effort : 'provider-default',
+      providerOptions:
+        withThinking && settings.ai.showThinking ? provider.thinkingOptions : undefined,
       stopWhen: stepCountIs(MAX_STEPS),
+      timeout: { firstChunkMs: STALL_MS, chunkMs: STALL_MS },
+      maxRetries: 1,
       abortSignal: abort.signal,
     });
 
@@ -119,7 +130,7 @@ export async function sendMessage(text: string, getCtx: () => AnalysisContext | 
   };
 
   try {
-    await run(settings.ai.showThinking);
+    await run(true);
   } catch (e) {
     if (abort.signal.aborted) {
       set((i) => ({ ...i, error: '中断しました' }));

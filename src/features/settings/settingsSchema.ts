@@ -38,6 +38,11 @@ export const SettingsSchema = z.object({
     anthropicModel: z.string().min(1).catch('claude-sonnet-5-5'),
     /** 対応しているモデルで思考過程を表示する */
     showThinking: z.boolean().catch(true),
+    /**
+     * 考える深さ。指定しないと Gemini 3 系などは深く考える設定になり、応答に数分かかることがあるため、
+     * 既定は速さ優先(low)にする
+     */
+    effort: z.enum(['low', 'medium', 'high']).catch('low'),
   }),
   editor: section({
     fontSize: z.enum(['sm', 'md', 'lg']).catch('md'),

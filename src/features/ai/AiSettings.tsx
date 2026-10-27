@@ -10,7 +10,9 @@ import {
 } from '@mantine/core';
 import { useSettingsStore } from '@/features/settings/settingsStore';
 import { useApiKeyStore } from './apiKeys';
+import type { Settings } from '@/features/settings/settingsSchema';
 import { ModelPicker } from './ModelPicker';
+import { effortLabels } from './effort';
 import { aiProviders, type AiProviderId } from './providers';
 
 export function AiSettings() {
@@ -57,6 +59,21 @@ export function AiSettings() {
         label="モデル"
         description="一覧から選ぶ(入力して絞り込み)か、鉛筆ボタンでモデル名を直接入力します。🔄 で最新の一覧を取得します。"
       />
+      <div>
+        <Text size="sm" fw={500}>
+          考える深さ
+        </Text>
+        <Text size="xs" c="dimmed" mb={6}>
+          深く考えるほど丁寧になりますが、応答に時間がかかります(flash
+          系でも数分かかることがあります)。普段は「速さ優先」がおすすめです。
+        </Text>
+        <SegmentedControl
+          fullWidth
+          value={settings.ai.effort}
+          onChange={(v) => update({ ai: { effort: v as Settings['ai']['effort'] } })}
+          data={Object.entries(effortLabels).map(([value, label]) => ({ value, label }))}
+        />
+      </div>
       <Switch
         label="AI の思考過程を表示する"
         description="対応しているモデルでは、考えている内容をリアルタイムに表示します"
