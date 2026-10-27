@@ -1,4 +1,4 @@
-import { stepCountIs, streamText, type StopCondition, type ToolSet } from 'ai';
+import { smoothStream, stepCountIs, streamText, type StopCondition, type ToolSet } from 'ai';
 import type { AnalysisContext } from '@/features/analysis/types';
 import { newId } from '@/domain/document';
 import { useSettingsStore } from '@/features/settings/settingsStore';
@@ -101,6 +101,11 @@ export async function sendMessage(text: string, getCtx: () => AnalysisContext | 
         withThinking && settings.ai.showThinking ? provider.thinkingOptions : undefined,
       stopWhen: [stepCountIs(MAX_STEPS), proposalCreated],
       timeout: { firstChunkMs: STALL_MS, chunkMs: STALL_MS },
+      // まとまって届いた本文も、少しずつ表示して書いている様子が見えるようにする
+      experimental_transform: smoothStream({
+        delayInMs: 8,
+        chunking: new Intl.Segmenter('ja', { granularity: 'word' }),
+      }),
       maxRetries: 1,
       abortSignal: abort.signal,
     });
