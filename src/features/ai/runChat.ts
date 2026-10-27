@@ -1,4 +1,4 @@
-import { stepCountIs, streamText } from 'ai';
+import { stepCountIs, streamText, type StopCondition, type ToolSet } from 'ai';
 import type { AnalysisContext } from '@/features/analysis/types';
 import { newId } from '@/domain/document';
 import { useSettingsStore } from '@/features/settings/settingsStore';
@@ -32,6 +32,15 @@ function errorMessage(e: unknown): string {
 const isThinkingUnsupported = (e: unknown) =>
   /think|reasoning|budget|adaptive/i.test(e instanceof Error ? e.message : String(e));
 
+/** 編集案の作成に成功したら、それ以上モデルを呼ばずに終える(余計な往復で待たせない) */
+const proposalCreated: StopCondition<ToolSet> = ({ steps }) =>
+  steps
+    .at(-1)
+    ?.toolResults.some(
+      (r) =>
+        r.toolName === 'propose_edits' && (r.output as { ok?: boolean } | undefined)?.ok === true,
+    ) ?? false;
+
 function toolFailure(output: unknown): string | undefined {
   if (output && typeof output === 'object' && 'ok' in output && output.ok === false) {
     const errors = (output as { errors?: string[] }).errors;
@@ -49,13 +58,31 @@ export async function sendMessage(text: string, getCtx: () => AnalysisContext | 
   if (!apiKey || !ctx || useAiStore.getState().busy) return;
 
   const now = Date.now();
-  const base = { tools: [], proposalIds: [], reasoning: '', startedAt: now };
+  const base = { tools: [], proposalIds: [], reasoning: '', steps: [], startedAt: now };
   const userItem: ChatItem = { ...base, id: newId(), role: 'user', text, phase: 'done' };
   const reply: ChatItem = { ...base, id: newId(), role: 'assistant', text: '', phase: 'waiting' };
   const abort = new AbortController();
   const history = [...useAiStore.getState().history, { role: 'user' as const, content: text }];
   useAiStore.setState((s) => ({ items: [...s.items, userItem, reply], busy: true, abort }));
   const set = (fn: (i: ChatItem) => ChatItem) => updateItem(reply.id, fn);
+  /** 実行中のステップの所要時間を記録する */
+  const mark = (
+    kind: 'chunk' | 'output' | 'reasoning' | 'end',
+    extra?: { chars?: number; tool?: string },
+  ) =>
+    set((i) => {
+      const steps = [...i.steps];
+      const cur = steps.at(-1);
+      if (!cur || cur.endedAt) return i;
+      const t = Date.now();
+      const next = { ...cur, firstChunkAt: cur.firstChunkAt ?? t };
+      if (kind === 'output') next.firstOutputAt ??= t;
+      if (kind === 'reasoning') next.reasoningChars += extra?.chars ?? 0;
+      if (kind === 'end') next.endedAt = t;
+      if (extra?.tool) next.tools = [...next.tools, extra.tool];
+      steps[steps.length - 1] = next;
+      return { ...i, steps };
+    });
 
   const run = async (withThinking: boolean) => {
     let received = false;
@@ -72,7 +99,7 @@ export async function sendMessage(text: string, getCtx: () => AnalysisContext | 
       reasoning: withThinking ? settings.ai.effort : 'provider-default',
       providerOptions:
         withThinking && settings.ai.showThinking ? provider.thinkingOptions : undefined,
-      stopWhen: stepCountIs(MAX_STEPS),
+      stopWhen: [stepCountIs(MAX_STEPS), proposalCreated],
       timeout: { firstChunkMs: STALL_MS, chunkMs: STALL_MS },
       maxRetries: 1,
       abortSignal: abort.signal,
@@ -81,16 +108,36 @@ export async function sendMessage(text: string, getCtx: () => AnalysisContext | 
     try {
       for await (const part of result.fullStream) {
         switch (part.type) {
+          case 'start-step':
+            // リクエストを送った時刻から測る(前のステップの終わり、最初は送信時刻)
+            set((i) => ({
+              ...i,
+              steps: [
+                ...i.steps,
+                {
+                  startedAt: i.steps.at(-1)?.endedAt ?? i.startedAt,
+                  reasoningChars: 0,
+                  tools: [],
+                },
+              ],
+            }));
+            break;
+          case 'finish-step':
+            mark('end');
+            break;
           case 'reasoning-delta':
             received = true;
+            mark('reasoning', { chars: part.text.length });
             set((i) => ({ ...i, phase: 'thinking', reasoning: i.reasoning + part.text }));
             break;
           case 'text-delta':
             received = true;
+            mark('output');
             set((i) => ({ ...i, phase: 'answering', text: i.text + part.text }));
             break;
           case 'tool-call':
             received = true;
+            mark('output', { tool: part.toolName });
             set((i) => ({
               ...i,
               phase: 'tool',
@@ -119,6 +166,15 @@ export async function sendMessage(text: string, getCtx: () => AnalysisContext | 
       }
       const response = await result.response;
       useAiStore.setState({ history: [...history, ...response.messages] });
+      // 編集案を作って終えた場合は、アプリから一言添える
+      set((i) =>
+        !i.text.trim() && i.proposalIds.length > 0
+          ? {
+              ...i,
+              text: '編集案を作成しました。内容と時間の変化を確認して、よければ「適用する」を押してください。',
+            }
+          : i,
+      );
     } catch (e) {
       // 思考過程の表示に対応していないモデルなら、オプションなしでやり直す
       if (withThinking && !received && !abort.signal.aborted && isThinkingUnsupported(e)) {

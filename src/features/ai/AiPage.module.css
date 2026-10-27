@@ -155,3 +155,7 @@
     mask-image: linear-gradient(to bottom, transparent 0, black 28px);
   }
 }
+
+.timing {
+  font-variant-numeric: tabular-nums;
+}

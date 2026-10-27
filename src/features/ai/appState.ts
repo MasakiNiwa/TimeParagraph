@@ -1,6 +1,8 @@
 import { estimateDocument } from '@/domain/estimate';
 import type { Block } from '@/domain/document';
 import { APP_NAME, APP_VERSION } from '@/lib/appInfo';
+import { longSentencesTool } from '@/features/analysis/tools/LongSentences';
+import { paragraphBalanceTool } from '@/features/analysis/tools/ParagraphBalance';
 import type { AnalysisContext } from '@/features/analysis/types';
 import type { Settings } from '@/features/settings/settingsSchema';
 
@@ -64,6 +66,11 @@ export function buildAppState(ctx: AnalysisContext, settings: Settings) {
           : {}),
       };
     }),
+    // よく使う分析結果を最初から渡し、ツール呼び出しの往復を減らす
+    analysis: {
+      paragraphBalance: paragraphBalanceTool.summarize?.(ctx),
+      longSentences: longSentencesTool.summarize?.(ctx),
+    },
     rehearsals: ctx.rehearsals.slice(0, 3).map((r) => ({
       date: new Date(r.startedAt).toISOString(),
       totalSec: r1(r.totalSec),
