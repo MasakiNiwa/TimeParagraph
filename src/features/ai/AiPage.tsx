@@ -159,6 +159,51 @@ function Reasoning({ item, elapsed }: { item: ChatItem; elapsed: number }) {
   );
 }
 
+const sec = (ms: number) => `${Math.max(0, Math.round(ms / 1000))}秒`;
+
+/**
+ * 所要時間の内訳。AI サービスの応答待ち(混雑など)と、モデルが考えている時間を分けて表示し、
+ * 遅いときの原因を切り分けられるようにする
+ */
+function StepTimings({ item }: { item: ChatItem }) {
+  const [opened, setOpened] = useState(false);
+  if (item.steps.length === 0) return null;
+  const now = Date.now();
+  return (
+    <div>
+      <UnstyledButton onClick={() => setOpened((o) => !o)}>
+        <Group gap={4}>
+          <Text size="xs" c="dimmed">
+            所要時間の内訳({item.steps.length} 回の呼び出し)
+          </Text>
+          {opened ? <IconChevronUp size={12} /> : <IconChevronDown size={12} />}
+        </Group>
+      </UnstyledButton>
+      <Collapse in={opened}>
+        <Stack gap={2} mt={4}>
+          {item.steps.map((st, i) => {
+            const end = st.endedAt ?? now;
+            const first = st.firstChunkAt ?? end;
+            const out = st.firstOutputAt ?? end;
+            return (
+              <Text key={i} size="xs" c="dimmed" className={classes.timing}>
+                {i + 1}. 応答待ち {sec(first - st.startedAt)} ・ 思考 {sec(out - first)} ・ 出力{' '}
+                {sec(end - out)}
+                {st.tools.length > 0 && ` → ${st.tools.map((t) => toolLabels[t] ?? t).join('、')}`}
+                {!st.endedAt && '(実行中)'}
+              </Text>
+            );
+          })}
+          <Text size="xs" c="dimmed">
+            「応答待ち」が長い場合は AI
+            サービス側の混雑、「思考」が長い場合はモデルが考えている時間です。
+          </Text>
+        </Stack>
+      </Collapse>
+    </div>
+  );
+}
+
 function Message({ item }: { item: ChatItem }) {
   const active = item.phase !== 'done';
   const elapsed = useElapsed(item.startedAt, active && item.role === 'assistant', item.finishedAt);
@@ -237,6 +282,7 @@ function Message({ item }: { item: ChatItem }) {
             {elapsed}秒
           </Text>
         )}
+        <StepTimings item={item} />
       </Stack>
     </Group>
   );

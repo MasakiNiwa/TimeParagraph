@@ -9,6 +9,18 @@ export interface ToolActivity {
   message?: string;
 }
 
+/** 1 回の API 呼び出し(ステップ)の所要時間の内訳。遅いときの原因の切り分けに使う */
+export interface StepTiming {
+  startedAt: number;
+  /** 最初になにか(思考・本文・ツール呼び出し)が届いた時刻 */
+  firstChunkAt?: number;
+  /** 本文またはツール呼び出しが始まった時刻(それまでは思考) */
+  firstOutputAt?: number;
+  endedAt?: number;
+  reasoningChars: number;
+  tools: string[];
+}
+
 /** 応答の進み具合(画面に「考え中」などを表示する) */
 export type ReplyPhase = 'waiting' | 'thinking' | 'tool' | 'answering' | 'done';
 
@@ -21,6 +33,7 @@ export interface ChatItem {
   tools: ToolActivity[];
   proposalIds: string[];
   phase: ReplyPhase;
+  steps: StepTiming[];
   startedAt: number;
   finishedAt?: number;
   error?: string;

@@ -17,6 +17,12 @@ export function buildSystemPrompt(state: AppState): string {
 - ユーザーの文体と意図を尊重し、事実を付け加えないでください。
 - 回答は日本語で、簡潔に。見出しや箇条書きを適度に使ってください。
 
+# 効率よく応答する
+- AI の呼び出しは 1 回ごとに時間がかかります。ツールの呼び出しは最小限にしてください。
+- 原稿・推定時間・段落のバランス・長い文は、下の「アプリの状態」にすでに含まれています。これらのためにツールを呼ぶ必要はありません。
+- 編集案を作るときは、estimate_text で事前に確かめず、いきなり propose_edits を 1 回だけ呼んでください(前後の時間は propose_edits が返します)。
+- propose_edits が成功したら、それ以上ツールを呼ばずに終えてください。
+
 # 単位
 - 時間はすべて秒です。ユーザーに伝えるときは「1分20秒」のように表記してください。
 - 推定方式: ${state.estimation.method}(${state.estimation.unitsPerMinute} ${state.estimation.unit}/分)
