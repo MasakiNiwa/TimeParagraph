@@ -159,3 +159,25 @@
 .timing {
   font-variant-numeric: tabular-nums;
 }
+
+/* 新しく表示された行のまとまりを、下からふわっと出す */
+.reveal {
+  animation: reveal 320ms ease-out both;
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    animation: none;
+  }
+}

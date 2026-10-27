@@ -159,6 +159,26 @@ function Reasoning({ item, elapsed }: { item: ChatItem; elapsed: number }) {
   );
 }
 
+/**
+ * 届いた本文を、行のまとまり(空行区切り)ごとに上から下へふわっと表示する。
+ * 受信中は書きかけの行を出さず、完成した行までを表示する(表示を遅らせる処理はしない)。
+ */
+function StreamingMarkdown({ text, streaming }: { text: string; streaming: boolean }) {
+  const visible = streaming ? text.slice(0, text.lastIndexOf('\n') + 1) : text;
+  const blocks = visible.split(/\n{2,}/).filter((b) => b.trim());
+  return (
+    <div className={classes.assistant}>
+      {blocks.map((b, i) => (
+        // key を位置で固定し、新しく増えたまとまりだけがアニメーションする
+        <div key={i} className={classes.reveal}>
+          <Markdown>{b}</Markdown>
+        </div>
+      ))}
+      {streaming && <Loader size="xs" type="dots" mt={4} />}
+    </div>
+  );
+}
+
 const sec = (ms: number) => `${Math.max(0, Math.round(ms / 1000))}秒`;
 
 /**
@@ -260,11 +280,7 @@ function Message({ item }: { item: ChatItem }) {
             {failedTools.map((t) => `${toolLabels[t.name] ?? t.name}: ${t.message}`).join(' / ')}
           </Text>
         )}
-        {item.text && (
-          <div className={classes.assistant}>
-            <Markdown>{item.text}</Markdown>
-          </div>
-        )}
+        {item.text && <StreamingMarkdown text={item.text} streaming={active} />}
         {item.proposalIds.map((id) => (
           <ProposalCard key={id} id={id} />
         ))}
