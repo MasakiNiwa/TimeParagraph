@@ -1,7 +1,7 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogle } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
-import type { LanguageModel } from 'ai';
+import type { JSONValue, LanguageModel } from 'ai';
 import type { Settings } from '@/features/settings/settingsSchema';
 
 export type AiProviderId = Settings['ai']['provider'];
@@ -19,6 +19,8 @@ export interface AiProvider {
   createModel: (apiKey: string, modelId: string) => LanguageModel;
   /** 利用できるモデルの一覧を API から取得する */
   listModels: (apiKey: string) => Promise<string[]>;
+  /** 思考過程をストリームで受け取るためのオプション */
+  thinkingOptions: Record<string, Record<string, JSONValue>>;
 }
 
 async function getJson(url: string, init?: RequestInit) {
@@ -41,6 +43,7 @@ export const aiProviders: Record<AiProviderId, AiProvider> = {
     modelSetting: 'googleModel',
     suggestedModels: ['gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-pro-latest'],
     createModel: (apiKey, modelId) => createGoogle({ apiKey })(modelId),
+    thinkingOptions: { google: { thinkingConfig: { includeThoughts: true } } },
     listModels: async (apiKey) => {
       const json = (await getJson(
         `https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000&key=${encodeURIComponent(apiKey)}`,
@@ -59,6 +62,7 @@ export const aiProviders: Record<AiProviderId, AiProvider> = {
     modelSetting: 'openaiModel',
     suggestedModels: ['gpt-5.5', 'gpt-5.4-mini'],
     createModel: (apiKey, modelId) => createOpenAI({ apiKey })(modelId),
+    thinkingOptions: { openai: { reasoningSummary: 'auto' } },
     listModels: async (apiKey) => {
       const json = (await getJson('https://api.openai.com/v1/models', {
         headers: { Authorization: `Bearer ${apiKey}` },
@@ -83,6 +87,7 @@ export const aiProviders: Record<AiProviderId, AiProvider> = {
     suggestedModels: ['claude-sonnet-5-5', 'claude-haiku-5-5', 'claude-opus-5-5'],
     createModel: (apiKey, modelId) =>
       createAnthropic({ apiKey, headers: ANTHROPIC_BROWSER_HEADERS })(modelId),
+    thinkingOptions: { anthropic: { thinking: { type: 'adaptive', display: 'summarized' } } },
     listModels: async (apiKey) => {
       const json = (await getJson('https://api.anthropic.com/v1/models?limit=100', {
         headers: {

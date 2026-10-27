@@ -1,6 +1,6 @@
 .dock {
   position: sticky;
-  bottom: calc(var(--app-shell-footer-offset, 0rem) + 8px);
+  bottom: calc(var(--app-shell-footer-offset, 0rem) + env(safe-area-inset-bottom, 0px) + 8px);
   z-index: 5;
   margin-top: var(--mantine-spacing-md);
   padding: 10px 12px;

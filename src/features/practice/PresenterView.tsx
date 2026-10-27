@@ -114,7 +114,7 @@ export function PresenterView({ onClose }: { onClose: () => void }) {
           radius={0}
         />
         {/* キー操作はリハーサル側のショートカット(スペース / →)で受けるため、フォーカスを受けない要素にする */}
-        <div className={classes.stage} onClick={nextParagraph} role="button" tabIndex={-1}>
+        <div className={classes.stage} onClick={nextParagraph}>
           <Text className={classes.current}>{textOf(current.blockId)}</Text>
           {next && <Text className={classes.next}>次:{textOf(next.blockId)}</Text>}
           <Text className={classes.hint}>

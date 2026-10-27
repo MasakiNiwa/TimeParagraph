@@ -4,6 +4,7 @@ import {
   Badge,
   Button,
   Card,
+  Collapse,
   Group,
   Loader,
   ScrollArea,
@@ -19,6 +20,9 @@ import {
 import {
   IconAlertTriangle,
   IconArrowUp,
+  IconBulb,
+  IconChevronDown,
+  IconChevronUp,
   IconCheck,
   IconMessagePlus,
   IconPlayerStopFilled,
@@ -104,52 +108,132 @@ function EmptyState({ onPick }: { onPick: (prompt: string) => void }) {
   );
 }
 
+/** 応答中は 1 秒ごとに再描画して経過時間を表示する */
+function useElapsed(startedAt: number, active: boolean, finishedAt?: number) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!active) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [active]);
+  return Math.max(0, Math.round(((finishedAt ?? now) - startedAt) / 1000));
+}
+
+const PHASE_LABEL: Record<ChatItem['phase'], string> = {
+  waiting: '考えています',
+  thinking: '考えています',
+  tool: 'アプリの機能を使っています',
+  answering: '回答を書いています',
+  done: '',
+};
+
+/** 思考過程。考えている間は開いて流れを見せ、終わったら折りたたむ */
+function Reasoning({ item, elapsed }: { item: ChatItem; elapsed: number }) {
+  const live = item.phase === 'thinking';
+  const [opened, setOpened] = useState(false);
+  const show = live || opened;
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (live) box.current?.scrollTo({ top: box.current.scrollHeight });
+  }, [item.reasoning, live]);
+  if (!item.reasoning) return null;
+  return (
+    <div className={classes.reasoning}>
+      <UnstyledButton onClick={() => setOpened((o) => !o)} className={classes.reasoningToggle}>
+        <Group gap={6} wrap="nowrap">
+          <IconBulb size={14} />
+          <Text size="xs" c="dimmed">
+            {live ? '思考中…' : `思考過程(${elapsed}秒)`}
+          </Text>
+          {show ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />}
+        </Group>
+      </UnstyledButton>
+      <Collapse in={show}>
+        <div ref={box} className={classes.reasoningBody} data-live={live || undefined}>
+          <Markdown>{item.reasoning}</Markdown>
+        </div>
+      </Collapse>
+    </div>
+  );
+}
+
 function Message({ item }: { item: ChatItem }) {
+  const active = item.phase !== 'done';
+  const elapsed = useElapsed(item.startedAt, active && item.role === 'assistant', item.finishedAt);
   if (item.role === 'user') return <div className={classes.user}>{item.text}</div>;
+  const runningTool = [...item.tools].reverse().find((t) => t.status === 'running');
+  const failedTools = item.tools.filter((t) => t.status === 'error' && t.message);
+  const empty = !active && !item.text && !item.error && item.proposalIds.length === 0;
   return (
     <Group gap="sm" align="flex-start" wrap="nowrap">
       <ThemeIcon size={28} radius="xl" variant="light" style={{ flexShrink: 0 }}>
         <IconSparkles size={16} />
       </ThemeIcon>
       <Stack gap={6} style={{ flex: 1, minWidth: 0 }}>
+        {active && item.phase !== 'answering' && (
+          <Group gap={8} wrap="nowrap" className={classes.status}>
+            <Loader size={14} type="dots" />
+            <Text size="sm" c="dimmed">
+              {PHASE_LABEL[item.phase]}
+              {runningTool && `:${toolLabels[runningTool.name] ?? runningTool.name}`}{' '}
+              <span className={classes.elapsed}>{elapsed}秒</span>
+            </Text>
+          </Group>
+        )}
+        <Reasoning item={item} elapsed={elapsed} />
         {item.tools.length > 0 && (
           <Group gap={4}>
             {item.tools.map((t, i) => (
-              <Badge
-                key={i}
-                size="sm"
-                variant="outline"
-                color={t.status === 'error' ? 'orange' : 'gray'}
-                tt="none"
-                leftSection={
-                  t.status === 'running' ? (
-                    <Loader size={10} />
-                  ) : t.status === 'done' ? (
-                    <IconCheck size={12} />
-                  ) : (
-                    <IconTool size={12} />
-                  )
-                }
-              >
-                {toolLabels[t.name] ?? t.name}
-              </Badge>
+              <Tooltip key={i} label={t.message} disabled={!t.message} multiline maw={280}>
+                <Badge
+                  size="sm"
+                  variant="outline"
+                  color={t.status === 'error' ? 'orange' : 'gray'}
+                  tt="none"
+                  leftSection={
+                    t.status === 'running' ? (
+                      <Loader size={10} />
+                    ) : t.status === 'done' ? (
+                      <IconCheck size={12} />
+                    ) : (
+                      <IconTool size={12} />
+                    )
+                  }
+                >
+                  {toolLabels[t.name] ?? t.name}
+                  {t.status === 'error' && '(失敗)'}
+                </Badge>
+              </Tooltip>
             ))}
           </Group>
         )}
-        {item.text ? (
+        {failedTools.length > 0 && (
+          <Text size="xs" c="dimmed">
+            {failedTools.map((t) => `${toolLabels[t.name] ?? t.name}: ${t.message}`).join(' / ')}
+          </Text>
+        )}
+        {item.text && (
           <div className={classes.assistant}>
             <Markdown>{item.text}</Markdown>
           </div>
-        ) : (
-          !item.error && item.tools.length === 0 && <Loader size="sm" type="dots" />
         )}
         {item.proposalIds.map((id) => (
           <ProposalCard key={id} id={id} />
         ))}
+        {empty && (
+          <Text size="sm" c="dimmed">
+            (回答がありませんでした。もう一度お試しいただくか、別のモデルを選んでください)
+          </Text>
+        )}
         {item.error && (
           <Alert color="orange" icon={<IconAlertTriangle size={16} />} p="xs">
             <Text size="sm">{item.error}</Text>
           </Alert>
+        )}
+        {!active && (item.text || item.proposalIds.length > 0) && (
+          <Text size="xs" c="dimmed">
+            {elapsed}秒
+          </Text>
         )}
       </Stack>
     </Group>

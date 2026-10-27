@@ -1,5 +1,6 @@
 import { Button, Card, CloseButton, Group, Stack, Table, Text } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
+import { IconTrash } from '@tabler/icons-react';
 import { calibrateSpeed, type Rehearsal } from '@/domain/rehearsal';
 import { formatDuration } from '@/domain/format';
 import { useSettingsStore } from '@/features/settings/settingsStore';
@@ -10,10 +11,20 @@ function diffText(actual: number, est: number) {
   return `${d >= 0 ? '+' : '−'}${formatDuration(Math.abs(d))}`;
 }
 
-export function RehearsalResult({ result, onClose }: { result: Rehearsal; onClose: () => void }) {
+export function RehearsalResult({
+  result,
+  onClose,
+  onDiscard,
+}: {
+  result: Rehearsal;
+  onClose: () => void;
+  /** 記録を削除する(失敗した計測を残さない) */
+  onDiscard?: () => void;
+}) {
   const update = useSettingsStore((s) => s.update);
   const speed = calibrateSpeed(result.laps);
   const isChars = result.method === 'chars';
+  const isSpeech = result.source === 'speech';
   const unit = isChars ? '字/分' : '拍/分';
 
   const applySpeed = () => {
@@ -26,7 +37,10 @@ export function RehearsalResult({ result, onClose }: { result: Rehearsal; onClos
     <Card withBorder padding="md">
       <Stack gap="sm">
         <Group justify="space-between" wrap="nowrap">
-          <Text fw={600}>リハーサル結果{!result.completed && '(途中まで)'}</Text>
+          <Text fw={600}>
+            {isSpeech ? '読み上げ計測の結果' : 'リハーサル結果'}
+            {!result.completed && '(途中まで)'}
+          </Text>
           <CloseButton onClick={onClose} aria-label="閉じる" />
         </Group>
         <Group gap="xl">
@@ -58,7 +72,10 @@ export function RehearsalResult({ result, onClose }: { result: Rehearsal; onClos
         {speed !== null ? (
           <Group gap="sm" justify="space-between">
             <Text size="sm">
-              あなたの話す速さ:<b>{speed}</b> {unit}(設定 {result.unitsPerMinute} {unit})
+              {isSpeech
+                ? `読み上げ(×${(result.speechRate ?? 1).toFixed(1)})の速さ:`
+                : 'あなたの話す速さ:'}
+              <b>{speed}</b> {unit}(設定 {result.unitsPerMinute} {unit})
             </Text>
             <Button size="xs" variant="light" onClick={applySpeed}>
               この速さを設定に反映
@@ -97,6 +114,19 @@ export function RehearsalResult({ result, onClose }: { result: Rehearsal; onClos
             </Table.Tbody>
           </Table>
         </Table.ScrollContainer>
+        {onDiscard && (
+          <Group justify="flex-end">
+            <Button
+              size="xs"
+              variant="subtle"
+              color="red"
+              leftSection={<IconTrash size={14} />}
+              onClick={onDiscard}
+            >
+              この記録を破棄
+            </Button>
+          </Group>
+        )}
       </Stack>
     </Card>
   );

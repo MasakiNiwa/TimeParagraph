@@ -5,14 +5,24 @@ import type { BlockEdit } from '@/domain/edits';
 export interface ToolActivity {
   name: string;
   status: 'running' | 'done' | 'error';
+  /** 失敗したときの理由(画面に表示する) */
+  message?: string;
 }
+
+/** 応答の進み具合(画面に「考え中」などを表示する) */
+export type ReplyPhase = 'waiting' | 'thinking' | 'tool' | 'answering' | 'done';
 
 export interface ChatItem {
   id: string;
   role: 'user' | 'assistant';
   text: string;
+  /** モデルの思考過程(対応しているモデルのみ) */
+  reasoning: string;
   tools: ToolActivity[];
   proposalIds: string[];
+  phase: ReplyPhase;
+  startedAt: number;
+  finishedAt?: number;
   error?: string;
 }
 

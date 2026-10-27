@@ -20,7 +20,8 @@ export function UpdatePrompt() {
           position: 'fixed',
           left: 16,
           right: 16,
-          bottom: 'calc(var(--app-shell-footer-offset, 0rem) + 16px)',
+          bottom:
+            'calc(var(--app-shell-footer-offset, 0rem) + env(safe-area-inset-bottom, 0px) + 16px)',
           zIndex: 2000,
           maxWidth: 420,
           marginInline: 'auto',

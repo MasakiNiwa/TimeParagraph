@@ -36,6 +36,8 @@ export const SettingsSchema = z.object({
     googleModel: z.string().min(1).catch('gemini-flash-latest'),
     openaiModel: z.string().min(1).catch('gpt-5.5'),
     anthropicModel: z.string().min(1).catch('claude-sonnet-5-5'),
+    /** 対応しているモデルで思考過程を表示する */
+    showThinking: z.boolean().catch(true),
   }),
   editor: section({
     fontSize: z.enum(['sm', 'md', 'lg']).catch('md'),

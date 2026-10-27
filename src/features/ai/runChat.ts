@@ -4,12 +4,12 @@ import { newId } from '@/domain/document';
 import { useSettingsStore } from '@/features/settings/settingsStore';
 import { useApiKeyStore } from './apiKeys';
 import { buildAppState } from './appState';
-import { updateItem, useAiStore } from './aiStore';
+import { updateItem, useAiStore, type ChatItem } from './aiStore';
 import { buildSystemPrompt } from './prompt';
 import { aiProviders } from './providers';
 import { createAiTools } from './tools';
 
-const MAX_STEPS = 6;
+const MAX_STEPS = 8;
 
 function errorMessage(e: unknown): string {
   const msg = e instanceof Error ? e.message : String(e);
@@ -18,8 +18,20 @@ function errorMessage(e: unknown): string {
   if (/429|quota|rate/i.test(msg))
     return `利用上限(無料枠など)に達しました。しばらく待ってから再度お試しください。(${msg})`;
   if (/404|not found|model/i.test(msg))
-    return `モデルが見つかりません。設定でモデルを選び直してください。(${msg})`;
+    return `モデルが見つかりません。モデルを選び直してください。(${msg})`;
   return msg;
+}
+
+/** 思考過程のオプションに対応していないモデルが返すエラーか */
+const isThinkingUnsupported = (e: unknown) =>
+  /think|reasoning|budget|adaptive/i.test(e instanceof Error ? e.message : String(e));
+
+function toolFailure(output: unknown): string | undefined {
+  if (output && typeof output === 'object' && 'ok' in output && output.ok === false) {
+    const errors = (output as { errors?: string[] }).errors;
+    return errors?.join(' / ') ?? '失敗しました';
+  }
+  return undefined;
 }
 
 /** ユーザーの発言を送り、ストリーミングで応答を受け取る */
@@ -30,17 +42,17 @@ export async function sendMessage(text: string, getCtx: () => AnalysisContext | 
   const ctx = getCtx();
   if (!apiKey || !ctx || useAiStore.getState().busy) return;
 
-  const userItem = { id: newId(), role: 'user' as const, text, tools: [], proposalIds: [] };
-  const reply = { id: newId(), role: 'assistant' as const, text: '', tools: [], proposalIds: [] };
+  const now = Date.now();
+  const base = { tools: [], proposalIds: [], reasoning: '', startedAt: now };
+  const userItem: ChatItem = { ...base, id: newId(), role: 'user', text, phase: 'done' };
+  const reply: ChatItem = { ...base, id: newId(), role: 'assistant', text: '', phase: 'waiting' };
   const abort = new AbortController();
   const history = [...useAiStore.getState().history, { role: 'user' as const, content: text }];
-  useAiStore.setState((s) => ({
-    items: [...s.items, userItem, reply],
-    busy: true,
-    abort,
-  }));
+  useAiStore.setState((s) => ({ items: [...s.items, userItem, reply], busy: true, abort }));
+  const set = (fn: (i: ChatItem) => ChatItem) => updateItem(reply.id, fn);
 
-  try {
+  const run = async (withThinking: boolean) => {
+    let received = false;
     const result = streamText({
       model: provider.createModel(apiKey, settings.ai[provider.modelSetting]),
       system: buildSystemPrompt(buildAppState(ctx, settings)),
@@ -48,52 +60,76 @@ export async function sendMessage(text: string, getCtx: () => AnalysisContext | 
       tools: createAiTools(
         getCtx,
         () => useSettingsStore.getState().settings,
-        (proposalId) =>
-          updateItem(reply.id, (i) => ({ ...i, proposalIds: [...i.proposalIds, proposalId] })),
+        (proposalId) => set((i) => ({ ...i, proposalIds: [...i.proposalIds, proposalId] })),
       ),
+      providerOptions: withThinking ? provider.thinkingOptions : undefined,
       stopWhen: stepCountIs(MAX_STEPS),
       abortSignal: abort.signal,
     });
 
-    for await (const part of result.fullStream) {
-      switch (part.type) {
-        case 'text-delta':
-          updateItem(reply.id, (i) => ({ ...i, text: i.text + part.text }));
-          break;
-        case 'tool-call':
-          updateItem(reply.id, (i) => ({
-            ...i,
-            tools: [...i.tools, { name: part.toolName, status: 'running' }],
-          }));
-          break;
-        case 'tool-result':
-        case 'tool-error': {
-          const status = part.type === 'tool-result' ? 'done' : 'error';
-          updateItem(reply.id, (i) => {
-            const idx = i.tools.findIndex(
-              (t) => t.name === part.toolName && t.status === 'running',
-            );
-            const tools = [...i.tools];
-            if (idx >= 0) tools[idx] = { ...tools[idx], status };
-            return { ...i, tools };
-          });
-          break;
+    try {
+      for await (const part of result.fullStream) {
+        switch (part.type) {
+          case 'reasoning-delta':
+            received = true;
+            set((i) => ({ ...i, phase: 'thinking', reasoning: i.reasoning + part.text }));
+            break;
+          case 'text-delta':
+            received = true;
+            set((i) => ({ ...i, phase: 'answering', text: i.text + part.text }));
+            break;
+          case 'tool-call':
+            received = true;
+            set((i) => ({
+              ...i,
+              phase: 'tool',
+              tools: [...i.tools, { name: part.toolName, status: 'running' }],
+            }));
+            break;
+          case 'tool-result':
+          case 'tool-error': {
+            const message =
+              part.type === 'tool-error' ? errorMessage(part.error) : toolFailure(part.output);
+            set((i) => {
+              const idx = i.tools.findIndex(
+                (t) => t.name === part.toolName && t.status === 'running',
+              );
+              const tools = [...i.tools];
+              if (idx >= 0)
+                tools[idx] = { ...tools[idx], status: message ? 'error' : 'done', message };
+              // ツールの結果を受けて、モデルが続きを考える
+              return { ...i, tools, phase: 'waiting' };
+            });
+            break;
+          }
+          case 'error':
+            throw part.error;
         }
-        case 'error':
-          throw part.error;
       }
+      const response = await result.response;
+      useAiStore.setState({ history: [...history, ...response.messages] });
+    } catch (e) {
+      // 思考過程の表示に対応していないモデルなら、オプションなしでやり直す
+      if (withThinking && !received && !abort.signal.aborted && isThinkingUnsupported(e)) {
+        console.warn('思考過程なしで再試行します', e);
+        return run(false);
+      }
+      throw e;
     }
-    const response = await result.response;
-    useAiStore.setState({ history: [...history, ...response.messages] });
+  };
+
+  try {
+    await run(settings.ai.showThinking);
   } catch (e) {
     if (abort.signal.aborted) {
-      updateItem(reply.id, (i) => ({ ...i, error: '中断しました' }));
+      set((i) => ({ ...i, error: '中断しました' }));
     } else {
       console.error(e);
-      updateItem(reply.id, (i) => ({ ...i, error: errorMessage(e) }));
+      set((i) => ({ ...i, error: errorMessage(e) }));
     }
     // 失敗したやり取りは history に追加しない(次の送信で会話の整合が崩れないようにする)
   } finally {
+    set((i) => ({ ...i, phase: 'done', finishedAt: Date.now() }));
     useAiStore.setState({ busy: false, abort: null });
   }
 }
