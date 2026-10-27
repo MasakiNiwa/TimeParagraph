@@ -39,6 +39,12 @@ let lastKey: string | null = null;
 let lastTime = 0;
 const COALESCE_MS = 1000;
 
+function breakTypingHistory() {
+  pendingKey = null;
+  lastKey = null;
+  lastTime = 0;
+}
+
 export const useDocumentStore = create<DocumentState>()(
   temporal(
     (set, get) => {
@@ -59,8 +65,10 @@ export const useDocumentStore = create<DocumentState>()(
         focus: null,
 
         load: (doc) => {
+          breakTypingHistory();
           set({ doc, focus: null });
           useDocumentStore.temporal.getState().clear();
+          breakTypingHistory();
         },
         setTitle: (title) => {
           pendingKey = 'title';
@@ -79,7 +87,8 @@ export const useDocumentStore = create<DocumentState>()(
         },
         insertBlocks: (afterId, blocks) =>
           mapBlocks((bs) => {
-            const i = afterId === null ? bs.length - 1 : bs.findIndex((b) => b.id === afterId);
+            const i = afterId === null ? -1 : bs.findIndex((b) => b.id === afterId);
+            if (afterId !== null && i < 0) return bs;
             return [...bs.slice(0, i + 1), ...blocks, ...bs.slice(i + 1)];
           }),
         removeBlock: (id) => {
@@ -90,7 +99,7 @@ export const useDocumentStore = create<DocumentState>()(
             const rest = bs.filter((b) => b.id !== id);
             return rest.length ? rest : [createBlock()];
           });
-          if (neighbor) focusOn(neighbor.id);
+          focusOn(neighbor?.id ?? get().doc!.blocks[0].id);
         },
         moveBlock: (id, toIndex) =>
           mapBlocks((bs) => {
@@ -108,9 +117,13 @@ export const useDocumentStore = create<DocumentState>()(
         splitBlock: (id, offset) => {
           const block = get().doc?.blocks.find((b) => b.id === id);
           if (!block) return;
-          const head = block.text.slice(0, offset).replace(/\s+$/, '');
-          const tail = block.text.slice(offset).replace(/^\s+/, '');
-          const next = createBlock({ text: tail });
+          const head = block.text.slice(0, offset);
+          const tail = block.text.slice(offset);
+          const next = createBlock({
+            text: tail,
+            speedFactor: block.speedFactor,
+            pauseAfterSec: block.pauseAfterSec,
+          });
           mapBlocks((bs) => bs.flatMap((b) => (b.id === id ? [{ ...b, text: head }, next] : [b])));
           focusOn(next.id, 0);
         },
@@ -124,7 +137,16 @@ export const useDocumentStore = create<DocumentState>()(
           mapBlocks((bs) =>
             bs
               .filter((b) => b.id !== id)
-              .map((b) => (b.id === prev.id ? { ...b, text: prev.text + cur.text } : b)),
+              .map((b) =>
+                b.id === prev.id
+                  ? {
+                      ...b,
+                      text: prev.text + cur.text,
+                      note: [prev.note, cur.note].filter(Boolean).join('\n'),
+                      pauseAfterSec: cur.pauseAfterSec,
+                    }
+                  : b,
+              ),
           );
           focusOn(prev.id, caret);
         },
@@ -171,9 +193,13 @@ export function useHistory<T>(selector: (s: TemporalState<HistoryState>) => T): 
 }
 
 export function undo() {
+  breakTypingHistory();
   useDocumentStore.temporal.getState().undo();
+  breakTypingHistory();
 }
 
 export function redo() {
+  breakTypingHistory();
   useDocumentStore.temporal.getState().redo();
+  breakTypingHistory();
 }

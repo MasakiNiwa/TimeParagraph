@@ -1,10 +1,11 @@
 import { stepCountIs, streamText, type StopCondition, type ToolSet } from 'ai';
 import type { AnalysisContext } from '@/features/analysis/types';
 import { newId } from '@/domain/document';
+import { useDocumentStore } from '@/features/editor/documentStore';
 import { useSettingsStore } from '@/features/settings/settingsStore';
 import { useApiKeyStore } from './apiKeys';
 import { buildAppState } from './appState';
-import { updateItem, useAiStore, type ChatItem } from './aiStore';
+import { syncChatDocument, updateItem, useAiStore, type ChatItem } from './aiStore';
 import { buildSystemPrompt } from './prompt';
 import { aiProviders } from './providers';
 import { createAiTools } from './tools';
@@ -55,7 +56,9 @@ export async function sendMessage(text: string, getCtx: () => AnalysisContext | 
   const provider = aiProviders[settings.ai.provider];
   const apiKey = useApiKeyStore.getState().keys[provider.id];
   const ctx = getCtx();
-  if (!apiKey || !ctx || useAiStore.getState().busy) return;
+  if (!apiKey || !ctx) return;
+  syncChatDocument(ctx.doc.id);
+  if (useAiStore.getState().busy) return;
 
   const now = Date.now();
   const base = { tools: [], proposalIds: [], reasoning: '', steps: [], startedAt: now };
@@ -64,7 +67,21 @@ export async function sendMessage(text: string, getCtx: () => AnalysisContext | 
   const abort = new AbortController();
   const history = [...useAiStore.getState().history, { role: 'user' as const, content: text }];
   useAiStore.setState((s) => ({ items: [...s.items, userItem, reply], busy: true, abort }));
-  const set = (fn: (i: ChatItem) => ChatItem) => updateItem(reply.id, fn);
+  const isCurrent = () => useAiStore.getState().abort === abort;
+  const set = (fn: (i: ChatItem) => ChatItem) => {
+    if (isCurrent()) updateItem(reply.id, fn);
+  };
+  const requestCtx = () => {
+    const doc = useDocumentStore.getState().doc;
+    if (
+      !isCurrent() ||
+      abort.signal.aborted ||
+      doc?.id !== ctx.doc.id ||
+      doc.blocks !== ctx.doc.blocks
+    )
+      return null;
+    return ctx;
+  };
   /** 実行中のステップの所要時間を記録する */
   const mark = (
     kind: 'chunk' | 'output' | 'reasoning' | 'end',
@@ -91,7 +108,7 @@ export async function sendMessage(text: string, getCtx: () => AnalysisContext | 
       system: buildSystemPrompt(buildAppState(ctx, settings)),
       messages: history,
       tools: createAiTools(
-        getCtx,
+        requestCtx,
         () => useSettingsStore.getState().settings,
         (proposalId) => set((i) => ({ ...i, proposalIds: [...i.proposalIds, proposalId] })),
       ),
@@ -165,7 +182,8 @@ export async function sendMessage(text: string, getCtx: () => AnalysisContext | 
         }
       }
       const response = await result.response;
-      useAiStore.setState({ history: [...history, ...response.messages] });
+      if (isCurrent() && !abort.signal.aborted)
+        useAiStore.setState({ history: [...history, ...response.messages] });
       // 編集案を作って終えた場合は、アプリから一言添える
       set((i) =>
         !i.text.trim() && i.proposalIds.length > 0
@@ -197,7 +215,7 @@ export async function sendMessage(text: string, getCtx: () => AnalysisContext | 
     // 失敗したやり取りは history に追加しない(次の送信で会話の整合が崩れないようにする)
   } finally {
     set((i) => ({ ...i, phase: 'done', finishedAt: Date.now() }));
-    useAiStore.setState({ busy: false, abort: null });
+    if (isCurrent()) useAiStore.setState({ busy: false, abort: null });
   }
 }
 

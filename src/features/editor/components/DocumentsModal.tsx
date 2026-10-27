@@ -3,7 +3,13 @@ import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { isSpoken } from '@/domain/estimate';
 import { useDocumentStore } from '../documentStore';
-import { createAndOpenDocument, deleteDocument, listDocuments, openDocument } from '../persistence';
+import {
+  createAndOpenDocument,
+  deleteDocument,
+  listDocuments,
+  openDocument,
+  runDocumentAction,
+} from '../persistence';
 import classes from './DocumentsModal.module.css';
 
 export function DocumentsModal({ opened, onClose }: { opened: boolean; onClose: () => void }) {
@@ -17,8 +23,7 @@ export function DocumentsModal({ opened, onClose }: { opened: boolean; onClose: 
           leftSection={<IconPlus size={16} />}
           variant="light"
           onClick={async () => {
-            await createAndOpenDocument();
-            onClose();
+            if (await runDocumentAction(() => createAndOpenDocument())) onClose();
           }}
         >
           新しい原稿
@@ -30,8 +35,7 @@ export function DocumentsModal({ opened, onClose }: { opened: boolean; onClose: 
               className={classes.open}
               data-current={d.id === currentId || undefined}
               onClick={async () => {
-                await openDocument(d.id);
-                onClose();
+                if (await runDocumentAction(() => openDocument(d.id))) onClose();
               }}
             >
               <Text fw={500} truncate>
@@ -48,7 +52,7 @@ export function DocumentsModal({ opened, onClose }: { opened: boolean; onClose: 
               aria-label="削除"
               onClick={() => {
                 if (window.confirm(`「${d.title || '無題の原稿'}」を削除しますか?`))
-                  void deleteDocument(d.id);
+                  void runDocumentAction(() => deleteDocument(d.id));
               }}
             >
               <IconTrash size={16} />

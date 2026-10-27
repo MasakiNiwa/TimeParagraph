@@ -34,3 +34,22 @@ describe('validateEdits', () => {
     expect(v.errors).toHaveLength(3);
   });
 });
+
+it('同じ位置への複数追加は指定順を保つ', () => {
+  const original = [createBlock({ text: '元' })];
+  const edits = ['1', '2', '3'].map((text) => ({
+    op: 'insert_after' as const,
+    blockId: original[0].id,
+    text,
+  }));
+  expect(applyEdits(original, edits).map((b) => b.text)).toEqual(['元', '1', '2', '3']);
+});
+it('削除済みの段落を後続操作で参照した提案を拒否する', () => {
+  const original = [createBlock({ text: '元' })];
+  expect(
+    validateEdits(original, [
+      { op: 'delete', blockId: original[0].id },
+      { op: 'replace', blockId: original[0].id, text: '更新' },
+    ]).ok,
+  ).toBe(false);
+});

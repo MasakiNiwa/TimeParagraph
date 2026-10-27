@@ -11,12 +11,14 @@ interface SpeechState {
   currentId: string | null;
   /** 読み上げで時間を計測中か */
   measuring: boolean;
+  error: string | null;
 }
 
 export const useSpeechStore = create<SpeechState>(() => ({
   status: 'idle',
   currentId: null,
   measuring: false,
+  error: null,
 }));
 
 export const speechSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
@@ -37,6 +39,7 @@ let sentenceIdx = 0;
 /** cancel 後に古い発話の onend が届いても無視するための世代番号 */
 let generation = 0;
 let pauseTimer: ReturnType<typeof setTimeout> | null = null;
+let gap: { remainingMs: number; startedAt: number | null } | null = null;
 
 /** 計測用の状態 */
 let measure: {
@@ -70,10 +73,33 @@ function clearPauseTimer() {
   pauseTimer = null;
 }
 
+function updateGap() {
+  if (gap?.startedAt !== null && gap?.startedAt !== undefined) {
+    gap.remainingMs = Math.max(0, gap.remainingMs - (now() - gap.startedAt));
+    gap.startedAt = null;
+  }
+}
+
+function resumeGap() {
+  if (!gap) return;
+  const gen = generation;
+  gap.startedAt = now();
+  useSpeechStore.setState({ status: 'playing' });
+  pauseTimer = setTimeout(() => {
+    if (gen !== generation) return;
+    gap = null;
+    speakCurrent();
+  }, gap.remainingMs);
+}
+
 function finishMeasure(completed: boolean) {
   const m = measure;
   measure = null;
   useSpeechStore.setState({ measuring: false });
+  if (m && gap && m.laps.length) {
+    updateGap();
+    m.laps[m.laps.length - 1] = Math.max(0, m.laps.at(-1)! - gap.remainingMs / 1000);
+  }
   m?.onDone(m.laps, completed);
 }
 
@@ -84,6 +110,7 @@ function onBlockEnd(gen: number) {
     const speakMs = now() - measure.blockStart - measure.excludedMs;
     measure.laps.push(Math.max(0, speakMs) / 1000 + item.pauseAfterSec);
     measure.blockStart = null;
+    measure.sentenceStart = null;
     measure.excludedMs = 0;
   }
   blockIdx++;
@@ -92,9 +119,9 @@ function onBlockEnd(gen: number) {
     stop(true);
     return;
   }
-  pauseTimer = setTimeout(() => {
-    if (gen === generation) speakCurrent();
-  }, item.pauseAfterSec * 1000);
+  if (gen !== generation) return;
+  gap = { remainingMs: item.pauseAfterSec * 1000, startedAt: null };
+  resumeGap();
 }
 
 function speakCurrent() {
@@ -137,9 +164,20 @@ function speakCurrent() {
   u.onerror = (e) => {
     if (gen !== generation || e.error === 'interrupted' || e.error === 'canceled') return;
     console.warn('読み上げエラー', e.error);
-    advance();
+    useSpeechStore.setState({
+      error: '読み上げに失敗しました。声や端末の音声設定を確認して、もう一度お試しください。',
+    });
+    stop(false);
   };
-  speechSynthesis.speak(u);
+  try {
+    speechSynthesis.speak(u);
+  } catch (error) {
+    console.warn('読み上げを開始できませんでした', error);
+    useSpeechStore.setState({
+      error: '読み上げを開始できませんでした。声や端末の音声設定を確認してください。',
+    });
+    stop(false);
+  }
 }
 
 function buildQueue(blocks: Block[], filter: (b: Block) => boolean, pauses?: Map<string, number>) {
@@ -157,6 +195,11 @@ function buildQueue(blocks: Block[], filter: (b: Block) => boolean, pauses?: Map
 function start(startIndex: number) {
   blockIdx = Math.max(0, startIndex);
   sentenceIdx = 0;
+  generation++;
+  clearPauseTimer();
+  gap = null;
+  pausedAt = null;
+  useSpeechStore.setState({ error: null });
   speechSynthesis.cancel();
   speakCurrent();
 }
@@ -190,6 +233,7 @@ export function pause() {
   if (useSpeechStore.getState().status !== 'playing') return;
   generation++;
   clearPauseTimer();
+  updateGap();
   speechSynthesis.cancel();
   if (measure) {
     // 途中まで読んだ文は再開時に読み直すので、その分を計測から除く
@@ -206,7 +250,8 @@ export function resume() {
   if (measure && pausedAt !== null && measure.blockStart !== null)
     measure.excludedMs += now() - pausedAt;
   pausedAt = null;
-  speakCurrent();
+  if (gap) resumeGap();
+  else speakCurrent();
 }
 
 /** 停止する。計測中なら、そこまでの記録を「途中まで」として返す */
@@ -217,6 +262,8 @@ export function stop(completed = false) {
   queue = [];
   useSpeechStore.setState({ status: 'idle', currentId: null });
   if (measure) finishMeasure(completed);
+  gap = null;
+  pausedAt = null;
 }
 
 /** 計測を結果を返さずに取りやめる(ページを離れたときなど) */
@@ -236,6 +283,9 @@ export function skip(delta: number) {
   }
   blockIdx = Math.min(Math.max(0, blockIdx + delta), queue.length - 1);
   sentenceIdx = 0;
+  generation++;
+  clearPauseTimer();
+  gap = null;
   speechSynthesis.cancel();
   speakCurrent();
 }

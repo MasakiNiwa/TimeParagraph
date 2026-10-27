@@ -1,5 +1,6 @@
 import type { ModelMessage } from 'ai';
 import { create } from 'zustand';
+import type { Block } from '@/domain/document';
 import type { BlockEdit } from '@/domain/edits';
 
 export interface ToolActivity {
@@ -42,6 +43,8 @@ export interface ChatItem {
 export interface Proposal {
   id: string;
   summary: string;
+  sourceDocId: string;
+  sourceBlocks: Block[];
   edits: BlockEdit[];
   beforeSec: number;
   afterSec: number;
@@ -49,6 +52,7 @@ export interface Proposal {
 }
 
 interface AiState {
+  documentId: string | null;
   items: ChatItem[];
   /** モデルに送る会話履歴(ツール呼び出しを含む) */
   history: ModelMessage[];
@@ -58,6 +62,7 @@ interface AiState {
 }
 
 export const useAiStore = create<AiState>(() => ({
+  documentId: null,
   items: [],
   history: [],
   proposals: {},
@@ -78,4 +83,11 @@ export function setProposalStatus(id: string, status: Proposal['status']) {
 export function resetChat() {
   useAiStore.getState().abort?.abort();
   useAiStore.setState({ items: [], history: [], proposals: {}, busy: false, abort: null });
+}
+
+/** 原稿が切り替わったら、以前の原稿の会話・提案を引き継がない */
+export function syncChatDocument(documentId: string) {
+  if (useAiStore.getState().documentId === documentId) return;
+  resetChat();
+  useAiStore.setState({ documentId });
 }

@@ -30,6 +30,7 @@ export function validateEdits(blocks: Block[], edits: BlockEdit[]): EditValidati
       errors.push(`edits[${i}]: ${e.op} には blockId が必要です`);
     if (e.op !== 'delete' && (e.text === undefined || e.text.trim() === ''))
       errors.push(`edits[${i}]: ${e.op} には text が必要です`);
+    if (e.op === 'delete' && e.blockId !== null) ids.delete(e.blockId);
   });
   return { ok: errors.length === 0, errors };
 }
@@ -37,16 +38,19 @@ export function validateEdits(blocks: Block[], edits: BlockEdit[]): EditValidati
 /** 編集を順に適用した新しいブロック列を返す(元の配列は変更しない) */
 export function applyEdits(blocks: Block[], edits: BlockEdit[]): Block[] {
   let out = [...blocks];
+  const insertionTail = new Map<string | null, string>();
   for (const e of edits) {
     if (e.op === 'replace') {
       out = out.map((b) => (b.id === e.blockId ? { ...b, text: e.text ?? b.text } : b));
     } else if (e.op === 'delete') {
       out = out.filter((b) => b.id !== e.blockId);
     } else {
-      const i = e.blockId === null ? -1 : out.findIndex((b) => b.id === e.blockId);
-      if (e.blockId !== null && i < 0) continue;
+      const anchor = insertionTail.get(e.blockId) ?? e.blockId;
+      const i = anchor === null ? -1 : out.findIndex((b) => b.id === anchor);
+      if (anchor !== null && i < 0) continue;
       const block = createBlock({ kind: e.kind ?? 'paragraph', text: e.text ?? '' });
       out = [...out.slice(0, i + 1), block, ...out.slice(i + 1)];
+      insertionTail.set(e.blockId, block.id);
     }
   }
   return out;

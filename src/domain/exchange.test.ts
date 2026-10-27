@@ -53,3 +53,9 @@ describe('exchange', () => {
     expect(importDocument('   ', 'a.txt').ok).toBe(false);
   });
 });
+
+it('波括弧で始まるテキスト原稿と大文字の JSON 拡張子を扱える', () => {
+  const text = importDocument('{ は集合の始まりです。', '原稿.txt');
+  expect(text.ok && text.doc.blocks[0].text).toBe('{ は集合の始まりです。');
+  expect(importDocument(exportJson(doc), 'BACKUP.JSON').ok).toBe(true);
+});

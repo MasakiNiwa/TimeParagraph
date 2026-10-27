@@ -49,7 +49,7 @@ import classes from './ControlDock.module.css';
 export function SpeechPanel() {
   const { doc, estimate, items } = usePracticeItems();
   const { method, unitsPerMinute } = useEstimator();
-  const { status, currentId, measuring } = useSpeechStore();
+  const { status, currentId, measuring, error } = useSpeechStore();
   const [result, setResult] = useState<Rehearsal | null>(null);
   const { voiceURI, rate } = useSettings().speech;
   const update = useSettingsStore((s) => s.update);
@@ -101,6 +101,11 @@ export function SpeechPanel() {
 
   return (
     <Stack gap="xs">
+      {error && (
+        <Alert color="red" role="alert">
+          {error}
+        </Alert>
+      )}
       {result && (
         <RehearsalResult
           result={result}

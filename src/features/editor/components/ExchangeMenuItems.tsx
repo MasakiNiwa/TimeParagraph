@@ -11,7 +11,7 @@ import { useRef } from 'react';
 import { exportJson, exportMarkdown, exportTimedText, importDocument } from '@/domain/exchange';
 import { downloadText, safeFileName } from '@/lib/download';
 import { useDocumentStore } from '../documentStore';
-import { importAndOpenDocument } from '../persistence';
+import { importAndOpenDocument, runDocumentAction } from '../persistence';
 import { useEstimate } from '../useEstimate';
 
 /** 原稿メニューに入れる、書き出し・取り込みの項目 */
@@ -23,12 +23,22 @@ export function ExchangeMenuItems() {
 
   const onFile = async (file: File | undefined) => {
     if (!file) return;
-    const r = importDocument(await file.text(), file.name);
+    let content: string;
+    try {
+      content = await file.text();
+    } catch {
+      notifications.show({
+        color: 'red',
+        message: 'ファイルを読み込めませんでした。もう一度選び直してください。',
+      });
+      return;
+    }
+    const r = importDocument(content, file.name);
     if (!r.ok) {
       notifications.show({ color: 'red', message: `取り込めませんでした: ${r.error}` });
       return;
     }
-    await importAndOpenDocument(r.doc);
+    if (!(await runDocumentAction(() => importAndOpenDocument(r.doc)))) return;
     notifications.show({ message: `「${r.doc.title}」を取り込みました` });
   };
 
@@ -58,8 +68,15 @@ export function ExchangeMenuItems() {
       <Menu.Item
         leftSection={<IconClipboardText size={16} />}
         onClick={async () => {
-          await navigator.clipboard.writeText(exportTimedText(doc(), estimate));
-          notifications.show({ message: '時間つきテキストをコピーしました' });
+          try {
+            await navigator.clipboard.writeText(exportTimedText(doc(), estimate));
+            notifications.show({ message: '時間つきテキストをコピーしました' });
+          } catch {
+            notifications.show({
+              color: 'red',
+              message: 'コピーできませんでした。時間つきテキストの書き出しをご利用ください。',
+            });
+          }
         }}
       >
         時間つきテキストをコピー

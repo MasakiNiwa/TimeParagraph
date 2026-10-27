@@ -94,3 +94,38 @@ describe('measureBySpeech', () => {
     speech.stop();
   });
 });
+
+it('段落間の間も一時停止・再開で残り時間を維持する', async () => {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] });
+  installFakeSpeech();
+  vi.resetModules();
+  const speech = await import('./speechStore');
+  const blocks = [createBlock({ text: 'あ' }), createBlock({ text: 'い' })];
+  const done = vi.fn();
+  speech.measureBySpeech(blocks, new Map([[blocks[0].id, 2]]), done);
+  await vi.advanceTimersByTimeAsync(600);
+  speech.pause();
+  await vi.advanceTimersByTimeAsync(5000);
+  speech.resume();
+  await vi.advanceTimersByTimeAsync(500);
+  expect(done).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(2000);
+  expect(done).toHaveBeenCalledWith([expect.closeTo(2.1, 1), expect.closeTo(0.1, 1)], true);
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
+
+it('段落間の待ち時間の途中で停止したら未経過分を実測に含めない', async () => {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] });
+  installFakeSpeech();
+  vi.resetModules();
+  const speech = await import('./speechStore');
+  const blocks = [createBlock({ text: 'あ' }), createBlock({ text: 'い' })];
+  const done = vi.fn();
+  speech.measureBySpeech(blocks, new Map([[blocks[0].id, 2]]), done);
+  await vi.advanceTimersByTimeAsync(600);
+  speech.stop();
+  expect(done).toHaveBeenCalledWith([expect.closeTo(0.6, 1)], false);
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});

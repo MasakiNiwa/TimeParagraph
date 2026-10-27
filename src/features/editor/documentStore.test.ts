@@ -49,3 +49,32 @@ describe('documentStore', () => {
     expect(texts()[0]).toBe('あいうえお');
   });
 });
+
+it('先頭の上に段落を追加すると先頭に入る', () => {
+  useDocumentStore.getState().insertBlock(null, { text: '先頭' });
+  expect(texts()).toEqual(['先頭', 'あいうえお', 'かきくけこ']);
+});
+
+it('Undo 直後の再入力も元に戻せ、古い Redo は残らない', () => {
+  const s = useDocumentStore.getState();
+  const id = ids()[0];
+  s.updateBlock(id, { text: '変更1' });
+  undo();
+  s.updateBlock(id, { text: '変更2' });
+  expect(useDocumentStore.temporal.getState().futureStates).toHaveLength(0);
+  undo();
+  expect(texts()[0]).toBe('あいうえお');
+});
+
+it('分割・結合で本文の空白とメモを失わない', () => {
+  const s = useDocumentStore.getState();
+  const id = ids()[0];
+  s.updateBlock(id, { text: '前半  後半', speedFactor: 1.3, pauseAfterSec: 4, note: '元のメモ' });
+  s.splitBlock(id, 4);
+  expect(texts().slice(0, 2).join('')).toBe('前半  後半');
+  expect(s.doc?.blocks[0].id).toBe(id);
+  expect(useDocumentStore.getState().doc!.blocks[1].speedFactor).toBe(1.3);
+  s.updateBlock(ids()[1], { note: '後半のメモ' });
+  s.mergeWithPrevious(ids()[1]);
+  expect(useDocumentStore.getState().doc!.blocks[0].note).toContain('後半のメモ');
+});

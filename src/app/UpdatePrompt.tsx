@@ -1,4 +1,5 @@
 import { Button, Group, Notification, Portal } from '@mantine/core';
+import { flushSave, runDocumentAction } from '@/features/editor/persistence';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
 /** 新しいバージョンが公開されたら、再読み込みを促す */
@@ -28,7 +29,12 @@ export function UpdatePrompt() {
         }}
       >
         <Group justify="flex-end" mt="xs">
-          <Button size="xs" onClick={() => void updateServiceWorker(true)}>
+          <Button
+            size="xs"
+            onClick={async () => {
+              if (await runDocumentAction(flushSave)) await updateServiceWorker(true);
+            }}
+          >
             更新する
           </Button>
         </Group>

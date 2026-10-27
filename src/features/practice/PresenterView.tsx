@@ -5,7 +5,8 @@ import {
   IconPlayerPlayFilled,
   IconX,
 } from '@tabler/icons-react';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { useFocusTrap } from '@mantine/hooks';
 import { formatDuration } from '@/domain/format';
 import { useDocumentStore } from '@/features/editor/documentStore';
 import {
@@ -21,6 +22,15 @@ import classes from './PresenterView.module.css';
 /** 発表者モード: 現在の段落を大きく表示し、画面のタップで次へ進む */
 export function PresenterView({ onClose }: { onClose: () => void }) {
   const state = useRehearsalStore();
+  const focusTrapRef = useFocusTrap();
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const setRootRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      rootRef.current = el;
+      focusTrapRef(el);
+    },
+    [focusTrapRef],
+  );
   const blocks = useDocumentStore((s) => s.doc?.blocks ?? []);
   const current = state.items[state.index];
   const next = state.items[state.index + 1];
@@ -55,7 +65,14 @@ export function PresenterView({ onClose }: { onClose: () => void }) {
 
   return (
     <Portal>
-      <div className={classes.root} role="dialog" aria-label="発表者モード">
+      <div
+        ref={setRootRef}
+        className={classes.root}
+        role="dialog"
+        aria-modal="true"
+        aria-label="発表者モード"
+        tabIndex={-1}
+      >
         <Group justify="space-between" className={classes.top} wrap="nowrap">
           <div>
             <Text className={classes.clock}>
@@ -77,7 +94,7 @@ export function PresenterView({ onClose }: { onClose: () => void }) {
                 variant="subtle"
                 color="gray"
                 size="lg"
-                onClick={() => void document.documentElement.requestFullscreen?.().catch(() => {})}
+                onClick={() => void rootRef.current?.requestFullscreen?.().catch(() => {})}
                 aria-label="全画面"
               >
                 <IconMaximize size={20} />
@@ -113,8 +130,21 @@ export function PresenterView({ onClose }: { onClose: () => void }) {
           size="xs"
           radius={0}
         />
-        {/* キー操作はリハーサル側のショートカット(スペース / →)で受けるため、フォーカスを受けない要素にする */}
-        <div className={classes.stage} onClick={nextParagraph}>
+        <div
+          className={classes.stage}
+          role="button"
+          tabIndex={0}
+          data-autofocus
+          aria-label="次の段落へ"
+          onClick={nextParagraph}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              e.stopPropagation();
+              if (!e.repeat) nextParagraph();
+            }
+          }}
+        >
           <Text className={classes.current}>{textOf(current.blockId)}</Text>
           {next && <Text className={classes.next}>次:{textOf(next.blockId)}</Text>}
           <Text className={classes.hint}>

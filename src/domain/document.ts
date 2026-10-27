@@ -11,7 +11,7 @@ export const BlockKindSchema = z.enum(['paragraph', 'heading']);
 export type BlockKind = z.infer<typeof BlockKindSchema>;
 
 export const BlockSchema = z.object({
-  id: z.string(),
+  id: z.string().min(1),
   kind: BlockKindSchema.catch('paragraph'),
   text: z.string().catch(''),
   /** 話す速さの倍率(1 = 設定どおり)。パラグラフごとにゆっくり/速めを指定する */
@@ -24,12 +24,19 @@ export const BlockSchema = z.object({
 export type Block = z.infer<typeof BlockSchema>;
 
 export const DocumentSchema = z.object({
-  schemaVersion: z.number().catch(DOCUMENT_SCHEMA_VERSION),
-  id: z.string(),
+  schemaVersion: z.literal(DOCUMENT_SCHEMA_VERSION).default(DOCUMENT_SCHEMA_VERSION),
+  id: z.string().min(1),
   title: z.string().catch(''),
   /** 目標時間(秒)。null なら未設定 */
   targetDurationSec: z.number().min(0).nullable().catch(null),
-  blocks: z.array(BlockSchema).catch([]),
+  blocks: z
+    .array(BlockSchema)
+    .default([])
+    .refine(
+      (blocks) => new Set(blocks.map((b) => b.id)).size === blocks.length,
+      'ブロック id が重複しています',
+    )
+    .transform((blocks) => (blocks.length ? blocks : [createBlock()])),
   createdAt: z.number().catch(() => Date.now()),
   updatedAt: z.number().catch(() => Date.now()),
 });

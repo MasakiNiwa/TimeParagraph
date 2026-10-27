@@ -18,7 +18,8 @@ import { DocumentsModal } from './components/DocumentsModal';
 import { ExchangeMenuItems } from './components/ExchangeMenuItems';
 import { SummaryBar } from './components/SummaryBar';
 import { redo, undo, useDocumentStore } from './documentStore';
-import { createAndOpenDocument } from './persistence';
+import { createAndOpenDocument, runDocumentAction } from './persistence';
+import { SaveStatus } from './components/SaveStatus';
 import classes from './EditorPage.module.css';
 
 function confirmClear() {
@@ -39,6 +40,10 @@ function useUndoShortcuts() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+      if (e.isComposing) return;
+      const target = e.target instanceof HTMLElement ? e.target : null;
+      // メモ・一括入力などのダイアログでは、その入力欄自身の Undo を使う
+      if (target?.closest('[role="dialog"]')) return;
       const key = e.key.toLowerCase();
       if (key === 'z' && !e.shiftKey) {
         e.preventDefault();
@@ -97,7 +102,7 @@ export function EditorPage() {
             </Menu.Item>
             <Menu.Item
               leftSection={<IconFileText size={16} />}
-              onClick={() => void createAndOpenDocument()}
+              onClick={() => void runDocumentAction(() => createAndOpenDocument())}
             >
               新しい原稿
             </Menu.Item>
@@ -110,6 +115,7 @@ export function EditorPage() {
         </Menu>
       </Group>
 
+      <SaveStatus />
       <SummaryBar onClear={confirmClear} />
 
       <Stack gap="xs">

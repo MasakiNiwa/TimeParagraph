@@ -29,7 +29,11 @@ export function createAiTools(
 ) {
   const requireCtx = () => {
     const ctx = getCtx();
-    if (!ctx) throw new Error('原稿が読み込まれていません');
+    // AI への依頼中に原稿が変更・切り替えされた場合は、古い B1 などで操作しないよう中止する
+    if (!ctx)
+      throw new Error(
+        'AI への依頼中に原稿が変更されたため、この操作を中止しました。もう一度依頼してください。',
+      );
     return ctx;
   };
 
@@ -129,6 +133,8 @@ export function createAiTools(
         const proposal: Proposal = {
           id: newId(),
           summary,
+          sourceDocId: ctx.doc.id,
+          sourceBlocks: ctx.doc.blocks,
           edits,
           beforeSec,
           afterSec,

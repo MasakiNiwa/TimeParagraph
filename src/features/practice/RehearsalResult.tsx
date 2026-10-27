@@ -3,6 +3,7 @@ import { notifications } from '@mantine/notifications';
 import { IconTrash } from '@tabler/icons-react';
 import { calibrateSpeed, type Rehearsal } from '@/domain/rehearsal';
 import { formatDuration } from '@/domain/format';
+import { speedLimits } from '@/features/settings/settingsSchema';
 import { useSettingsStore } from '@/features/settings/settingsStore';
 
 function diffText(actual: number, est: number) {
@@ -26,9 +27,11 @@ export function RehearsalResult({
   const isChars = result.method === 'chars';
   const isSpeech = result.source === 'speech';
   const unit = isChars ? '字/分' : '拍/分';
+  const [minSpeed, maxSpeed] = isChars ? speedLimits.chars : speedLimits.moras;
+  const canApplySpeed = speed !== null && speed >= minSpeed && speed <= maxSpeed;
 
   const applySpeed = () => {
-    if (speed === null) return;
+    if (!canApplySpeed || speed === null) return;
     update({ estimation: isChars ? { charsPerMinute: speed } : { morasPerMinute: speed } });
     notifications.show({ message: `話す速さを ${speed} ${unit} に設定しました` });
   };
@@ -77,13 +80,18 @@ export function RehearsalResult({
                 : 'あなたの話す速さ:'}
               <b>{speed}</b> {unit}(設定 {result.unitsPerMinute} {unit})
             </Text>
-            <Button size="xs" variant="light" onClick={applySpeed}>
+            <Button size="xs" variant="light" onClick={applySpeed} disabled={!canApplySpeed}>
               この速さを設定に反映
             </Button>
           </Group>
         ) : (
           <Text size="sm" c="dimmed">
             計測時間が短いため、話す速さは計算していません。
+          </Text>
+        )}
+        {speed !== null && !canApplySpeed && (
+          <Text size="xs" c="dimmed">
+            設定できる速さは {minSpeed}〜{maxSpeed} {unit} です。計測内容を確認してください。
           </Text>
         )}
         <Table.ScrollContainer minWidth={360}>
