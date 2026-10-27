@@ -6,6 +6,7 @@ import {
   IconFlag,
   IconTrash,
 } from '@tabler/icons-react';
+import { notifications } from '@mantine/notifications';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { formatDuration } from '@/domain/format';
 import { useEstimator } from '@/features/estimation/useEstimator';
@@ -44,13 +45,20 @@ function useRehearsalKeys(active: boolean) {
     if (!active) return;
     const onKey = (e: KeyboardEvent) => {
       const target = e.target instanceof HTMLElement ? e.target : null;
-      if (target?.closest('input, textarea, select')) return;
+      if (e.repeat || e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (
+        target?.closest(
+          'input, textarea, select, [contenteditable="true"], [role="dialog"]:not([aria-label="発表者モード"])',
+        )
+      )
+        return;
       // フォーカス中のボタンはスペースキーで自身が押されるので、ここでは横取りしない
       if (e.key === ' ' && target?.closest('button, [role="button"]')) return;
       if (e.key === ' ' || e.key === 'ArrowRight') {
         e.preventDefault();
         nextParagraph();
       } else if (e.key.toLowerCase() === 'p') {
+        e.preventDefault();
         const s = useRehearsalStore.getState().status;
         if (s === 'running') pauseRehearsal();
         else resumeRehearsal();
@@ -71,6 +79,17 @@ export function RehearsalPanel() {
   useTicker(state.status === 'running');
   useRehearsalKeys(active);
   useWakeLock(active);
+  useEffect(() => () => pauseRehearsal(), []);
+  useEffect(() => {
+    if (!state.meta) return;
+    if (state.meta.docId !== doc?.id) resetRehearsal();
+    else if (active && state.meta.blocks && state.meta.blocks !== doc?.blocks) {
+      resetRehearsal();
+      notifications.show({
+        message: '原稿が変更されたため、計測を取りやめました。新しい内容で開始してください。',
+      });
+    }
+  }, [doc?.id, doc?.blocks, state.meta, active]);
 
   const actualById = useMemo(
     () => new Map(state.laps.map((sec, i) => [state.items[i]?.blockId, sec])),
@@ -83,7 +102,13 @@ export function RehearsalPanel() {
   }
 
   const start = () =>
-    startRehearsal(items, { docId: doc.id, docTitle: doc.title, method, unitsPerMinute });
+    startRehearsal(items, {
+      docId: doc.id,
+      docTitle: doc.title,
+      method,
+      unitsPerMinute,
+      blocks: doc.blocks,
+    });
 
   const current = active ? state.items[state.index] : undefined;
   const segSec = currentSegmentSec(state);
@@ -129,7 +154,7 @@ export function RehearsalPanel() {
       />
       <div className={classes.dock}>
         {!active ? (
-          <Group justify="space-between" wrap="nowrap">
+          <Group justify="space-between" wrap="wrap">
             <div>
               <Text size="xs" c="dimmed">
                 推定
@@ -206,12 +231,7 @@ export function RehearsalPanel() {
               >
                 {state.status === 'running' ? '一時停止' : '再開'}
               </Button>
-              <Button
-                size="xs"
-                variant="default"
-
-                onClick={() => setPresenter(true)}
-              >
+              <Button size="xs" variant="default" onClick={() => setPresenter(true)}>
                 発表モード
               </Button>
               <Menu position="top-end" shadow="md" withinPortal>

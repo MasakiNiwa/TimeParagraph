@@ -1,10 +1,10 @@
 import { Badge, Button, Card, Group, Stack, Text } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconCheck, IconX } from '@tabler/icons-react';
-import { applyEdits, validateEdits, type BlockEdit } from '@/domain/edits';
+import { type BlockEdit } from '@/domain/edits';
 import type { Block } from '@/domain/document';
 import { formatDuration } from '@/domain/format';
-import { useDocumentStore } from '@/features/editor/documentStore';
+import { applyProposal } from './proposals';
 import { setProposalStatus, useAiStore } from './aiStore';
 import classes from './AiPage.module.css';
 
@@ -45,23 +45,17 @@ function EditView({ edit, blocks }: { edit: BlockEdit; blocks: Block[] }) {
 
 export function ProposalCard({ id }: { id: string }) {
   const proposal = useAiStore((s) => s.proposals[id]);
-  const blocks = useDocumentStore((s) => s.doc?.blocks ?? []);
   if (!proposal) return null;
   const delta = proposal.afterSec - proposal.beforeSec;
 
   const apply = () => {
-    const s = useDocumentStore.getState();
-    const current = s.doc?.blocks ?? [];
-    const v = validateEdits(current, proposal.edits);
-    if (!v.ok) {
+    if (!applyProposal(id)) {
       notifications.show({
         color: 'red',
         message: '原稿が変更されたため、この提案を適用できません。もう一度依頼してください。',
       });
       return;
     }
-    s.setBlocks(applyEdits(current, proposal.edits));
-    setProposalStatus(id, 'applied');
     notifications.show({ message: '提案を適用しました(エディタの「元に戻す」で戻せます)' });
   };
 
@@ -89,7 +83,7 @@ export function ProposalCard({ id }: { id: string }) {
           {formatDuration(Math.abs(delta))})・アプリの推定方式で計算
         </Text>
         {proposal.edits.map((e, i) => (
-          <EditView key={i} edit={e} blocks={blocks} />
+          <EditView key={i} edit={e} blocks={proposal.sourceBlocks} />
         ))}
         {proposal.status === 'pending' && (
           <Group justify="flex-end" gap="xs">

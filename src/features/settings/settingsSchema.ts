@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+export const speedLimits = { chars: [50, 1000], moras: [100, 1500] } as const;
+
 /** 欠落・型不一致のときは各項目の既定値で埋めたオブジェクトにフォールバックする */
 function section<T extends z.ZodRawShape>(shape: T) {
   const obj = z.object(shape);

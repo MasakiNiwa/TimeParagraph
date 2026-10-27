@@ -36,7 +36,7 @@ import Markdown from 'react-markdown';
 import { Link } from 'react-router-dom';
 import { useAnalysisContext } from '@/features/analysis/useAnalysisContext';
 import { useSettings, useSettingsStore } from '@/features/settings/settingsStore';
-import { resetChat, useAiStore, type ChatItem } from './aiStore';
+import { resetChat, syncChatDocument, useAiStore, type ChatItem } from './aiStore';
 import { useApiKeyStore } from './apiKeys';
 import { ModelPicker } from './ModelPicker';
 import { quickPrompts } from './prompt';
@@ -345,6 +345,9 @@ function ChatToolbar({ canReset }: { canReset: boolean }) {
 
 export function AiPage() {
   const ctx = useAnalysisContext();
+  useEffect(() => {
+    if (ctx?.doc.id) syncChatDocument(ctx.doc.id);
+  }, [ctx?.doc.id]);
   const settings = useSettings();
   const updateSettings = useSettingsStore((s) => s.update);
   const provider = aiProviders[settings.ai.provider];

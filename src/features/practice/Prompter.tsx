@@ -65,7 +65,11 @@ export function Prompter({
             tabIndex={onSelect ? 0 : undefined}
             onClick={() => onSelect?.(b.id)}
             onKeyDown={(e) => {
-              if (onSelect && e.key === 'Enter') onSelect(b.id);
+              if (onSelect && (e.key === 'Enter' || e.key === ' ')) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!e.repeat) onSelect(b.id);
+              }
             }}
           >
             <Text className={classes.text}>{b.text}</Text>

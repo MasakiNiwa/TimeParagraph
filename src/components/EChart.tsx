@@ -89,7 +89,10 @@ export function EChart({
       {
         backgroundColor: 'transparent',
         color: palette,
-        textStyle: { color: text, fontFamily: 'inherit' },
+        textStyle: {
+          color: text,
+          fontFamily: ref.current ? getComputedStyle(ref.current).fontFamily : 'sans-serif',
+        },
         ...option,
       },
       true,

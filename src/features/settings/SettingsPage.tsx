@@ -26,6 +26,7 @@ import { methodInfo, type EstimationMethod } from '@/features/estimation/useEsti
 import { speechSupported } from '@/features/speech/speechStore';
 import { useVoices } from '@/features/speech/useVoices';
 import { useSettingsStore } from './settingsStore';
+import { SpeedNumberInput } from './SpeedNumberInput';
 
 function SpeedField({
   label,
@@ -61,13 +62,11 @@ function SpeedField({
           label={(v) => `${v} ${unit}`}
           aria-label={label}
         />
-        <NumberInput
-          w={120}
-          min={50}
-          max={1500}
-          suffix={` ${unit}`}
+        <SpeedNumberInput
           value={value}
-          onChange={(v) => typeof v === 'number' && onChange(v)}
+          onChange={onChange}
+          isChars={unit === '字/分'}
+          width={120}
         />
       </Group>
     </div>

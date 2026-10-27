@@ -129,6 +129,8 @@ export function createAiTools(
         const proposal: Proposal = {
           id: newId(),
           summary,
+          sourceDocId: ctx.doc.id,
+          sourceBlocks: ctx.doc.blocks,
           edits,
           beforeSec,
           afterSec,

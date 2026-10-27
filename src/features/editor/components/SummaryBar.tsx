@@ -16,6 +16,7 @@ import { useState } from 'react';
 import { formatDuration } from '@/domain/format';
 import { methodInfo } from '@/features/estimation/useEstimator';
 import { useMorphStore } from '@/features/estimation/morphStore';
+import { SpeedNumberInput } from '@/features/settings/SpeedNumberInput';
 import { useSettings, useSettingsStore } from '@/features/settings/settingsStore';
 import { redo, undo, useDocumentStore, useHistory } from '../documentStore';
 import { useEstimate } from '../useEstimate';
@@ -56,13 +57,7 @@ function SpeedPopover() {
             推定方式: {methodInfo[method].label}(設定で変更できます)
           </Text>
           <Slider min={min} max={max} step={10} value={value} onChange={set} />
-          <NumberInput
-            min={50}
-            max={1500}
-            suffix={` ${unit}`}
-            value={value}
-            onChange={(v) => typeof v === 'number' && set(v)}
-          />
+          <SpeedNumberInput value={value} onChange={set} isChars={isChars} />
         </Stack>
       </Popover.Dropdown>
     </Popover>

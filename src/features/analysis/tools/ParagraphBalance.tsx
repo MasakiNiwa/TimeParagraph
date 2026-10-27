@@ -2,6 +2,7 @@ import { Anchor, Badge, Group, SimpleGrid, Stack, Text } from '@mantine/core';
 import { IconChartBar } from '@tabler/icons-react';
 import { useMemo } from 'react';
 import { formatDuration } from '@/domain/format';
+import { escapeHtml } from '@/lib/escapeHtml';
 import { EChart, useChartColors, type EChartsOption } from '@/components/EChart';
 import type { AnalysisContext, AnalysisTool } from '../types';
 
@@ -27,7 +28,7 @@ function ParagraphBalance({ ctx }: { ctx: AnalysisContext }) {
         trigger: 'item',
         formatter: (p: { dataIndex: number }) => {
           const s = stats.all[p.dataIndex];
-          return `段落${s.index}: ${s.label}<br/>${formatDuration(s.sec)}(中央値の ${s.ratio.toFixed(1)} 倍)`;
+          return `段落${s.index}: ${escapeHtml(s.label)}<br/>${formatDuration(s.sec)}(中央値の ${s.ratio.toFixed(1)} 倍)`;
         },
       },
       xAxis: {

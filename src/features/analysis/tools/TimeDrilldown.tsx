@@ -3,6 +3,7 @@ import { IconArrowUpRight, IconSitemap } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 import { findPath, type TimeNode } from '@/domain/analysis';
 import { formatDuration } from '@/domain/format';
+import { escapeHtml } from '@/lib/escapeHtml';
 import { EChart, useChartColors, type EChartsOption } from '@/components/EChart';
 import type { AnalysisContext, AnalysisTool } from '../types';
 
@@ -39,7 +40,7 @@ function TimeDrilldown({ ctx }: { ctx: AnalysisContext }) {
         trigger: 'item',
         formatter: (p: { dataIndex: number }) => {
           const n = items[p.dataIndex];
-          return `${n.label}<br/>${formatDuration(n.sec)}(${Math.round((n.sec / total) * 100)}%)`;
+          return `${escapeHtml(n.label)}<br/>${formatDuration(n.sec)}(${Math.round((n.sec / total) * 100)}%)`;
         },
       },
       xAxis: {

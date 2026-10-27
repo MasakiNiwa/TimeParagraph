@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { newId } from '@/domain/document';
+import { newId, type Block } from '@/domain/document';
+import { notifications } from '@mantine/notifications';
 import type { Lap, Rehearsal } from '@/domain/rehearsal';
 import { db } from '@/lib/db';
 
@@ -26,7 +27,13 @@ interface RehearsalState {
   segmentResumedAt: number | null;
   /** 終了後の結果 */
   result: Rehearsal | null;
-  meta: { docId: string; docTitle: string; method: string; unitsPerMinute: number } | null;
+  meta: {
+    docId: string;
+    docTitle: string;
+    method: string;
+    unitsPerMinute: number;
+    blocks?: Block[];
+  } | null;
   startedAt: number;
 }
 
@@ -145,7 +152,15 @@ export function buildRehearsal(
 }
 
 export async function saveRehearsal(result: Rehearsal) {
-  if (result.laps.length > 0) await db.rehearsals.put(result);
+  try {
+    if (result.laps.length > 0) await db.rehearsals.put(result);
+  } catch (error) {
+    console.error('リハーサル結果の保存に失敗しました', error);
+    notifications.show({
+      color: 'red',
+      message: '計測結果を履歴に保存できませんでした。結果はこの画面で確認できます。',
+    });
+  }
 }
 
 /** 終了後の記録を破棄する(保存済みの記録も削除する) */

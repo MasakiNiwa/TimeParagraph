@@ -74,9 +74,12 @@ export type ImportResult = { ok: true; doc: TPDocument } | { ok: false; error: s
  */
 export function importDocument(content: string, fileName = ''): ImportResult {
   const trimmed = content.trim();
-  if (fileName.endsWith('.json') || trimmed.startsWith('{')) {
+  const isText = /\.(md|markdown|txt)$/i.test(fileName);
+  if (/\.json$/i.test(fileName) || (!isText && trimmed.startsWith('{'))) {
     try {
       const json = JSON.parse(trimmed);
+      if (json?.format === 'timeparagraph' && json.schemaVersion !== DOCUMENT_SCHEMA_VERSION)
+        return { ok: false, error: 'このバージョンの原稿データには対応していません' };
       const doc = parseDocument(json?.format === 'timeparagraph' ? json.document : json);
       if (!doc) return { ok: false, error: 'TimeParagraph の原稿データとして読み込めませんでした' };
       const now = Date.now();
