@@ -1,7 +1,7 @@
 {
   "name": "timeparagraph",
   "private": true,
-  "version": "0.8.6",
+  "version": "0.9.0",
   "description": "パラグラフ単位で話す時間と内容を考えるエディタ",
   "license": "MIT",
   "type": "module",
@@ -36,6 +36,7 @@
     "@mantine/hooks": "^8.3.18",
     "@mantine/modals": "^8.3.18",
     "@mantine/notifications": "^8.3.18",
+    "@openrouter/ai-sdk-provider": "^3.1.0",
     "@tabler/icons-react": "^3.49.0",
     "ai": "^7.0.153",
     "comlink": "^4.4.2",

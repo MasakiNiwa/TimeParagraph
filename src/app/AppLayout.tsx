@@ -18,6 +18,7 @@ import { APP_NAME } from '@/lib/appInfo';
 import classes from './AppLayout.module.css';
 import { navItems } from './routes';
 import { UpdatePrompt } from './UpdatePrompt';
+import { useOpenRouterCallback } from './useOpenRouterCallback';
 
 function isActive(pathname: string, path: string) {
   return path === '/' ? pathname === '/' : pathname.startsWith(path);
@@ -47,6 +48,7 @@ export function AppLayout() {
   useEffect(() => {
     void startPersistence();
   }, []);
+  useOpenRouterCallback();
   const isMobile = useMediaQuery('(max-width: 48em)', false, { getInitialValueInEffect: false });
 
   return (

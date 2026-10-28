@@ -8,12 +8,45 @@ import {
   Switch,
   Text,
 } from '@mantine/core';
+import { IconLogin } from '@tabler/icons-react';
+import { useState } from 'react';
 import { useSettingsStore } from '@/features/settings/settingsStore';
 import { useApiKeyStore } from './apiKeys';
 import type { Settings } from '@/features/settings/settingsSchema';
 import { ModelPicker } from './ModelPicker';
+import { startOpenRouterLogin } from './openrouterAuth';
 import { effortLabels } from './effort';
 import { aiProviders, type AiProviderId } from './providers';
+
+/** 「OpenRouter でログイン」。キーをコピーせずに受け取れる(OAuth PKCE) */
+function OpenRouterLogin({ hasKey }: { hasKey: boolean }) {
+  const [loading, setLoading] = useState(false);
+  return (
+    <Stack gap={6}>
+      <Group gap="xs">
+        <Button
+          variant="light"
+          leftSection={<IconLogin size={16} />}
+          loading={loading}
+          onClick={() => {
+            setLoading(true);
+            void startOpenRouterLogin().catch(() => setLoading(false));
+          }}
+        >
+          {hasKey ? 'OpenRouter でログインし直す' : 'OpenRouter でログイン'}
+        </Button>
+      </Group>
+      <Text size="xs" c="dimmed">
+        OpenRouter のページでログインして許可すると、このアプリに戻り、API
+        キーが自動で入力されます。キーを手で貼り付けて使うこともできます。
+      </Text>
+      <Text size="xs" c="dimmed">
+        無料モデルには利用回数の制限があります。また、提供元によっては入力内容が記録されたり学習に使われたりすることがあります。OpenRouter
+        の設定(Privacy)で許可する提供元を選べます。
+      </Text>
+    </Stack>
+  );
+}
 
 export function AiSettings() {
   const { settings, update } = useSettingsStore();
@@ -55,9 +88,14 @@ export function AiSettings() {
         onChange={(e) => setKey(provider.id, e.currentTarget.value)}
         autoComplete="off"
       />
+      {provider.id === 'openrouter' && <OpenRouterLogin hasKey={Boolean(key)} />}
       <ModelPicker
         label="モデル"
-        description="一覧から選ぶ(入力して絞り込み)か、鉛筆ボタンでモデル名を直接入力します。🔄 で最新の一覧を取得します。"
+        description={
+          provider.id === 'openrouter'
+            ? '押すと選択パネルが開きます。検索・無料のみ・ツール対応などで絞り込めます。'
+            : '一覧から選ぶ(入力して絞り込み)か、鉛筆ボタンでモデル名を直接入力します。🔄 で最新の一覧を取得します。'
+        }
       />
       <div>
         <Text size="sm" fw={500}>

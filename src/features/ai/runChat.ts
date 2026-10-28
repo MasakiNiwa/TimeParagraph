@@ -7,6 +7,7 @@ import { useApiKeyStore } from './apiKeys';
 import { buildAppState } from './appState';
 import { syncChatDocument, updateItem, useAiStore, type ChatItem } from './aiStore';
 import { buildSystemPrompt } from './prompt';
+import { addRecent } from './modelList';
 import { aiProviders } from './providers';
 import { createAiTools } from './tools';
 
@@ -18,6 +19,12 @@ function errorMessage(e: unknown): string {
   const msg = e instanceof Error ? e.message : String(e);
   if (/401|403|API key|api_key|invalid.*key/i.test(msg))
     return `API キーが正しくないか、権限がありません。設定を確認してください。(${msg})`;
+  if (/data policy|privacy|training/i.test(msg))
+    return `このモデルは、OpenRouter のプライバシー設定で許可されていない提供元でしか使えません。OpenRouter の設定(Privacy)を確認するか、別のモデルを選んでください。(${msg})`;
+  if (/402|credit|insufficient/i.test(msg))
+    return `OpenRouter のクレジットが不足しています。無料モデル(「無料」の表示があるもの)を選ぶか、クレジットを追加してください。(${msg})`;
+  if (/tool use|support tool|tool_choice|tools? (are|is) not supported/i.test(msg))
+    return `このモデルはアプリの機能(ツール)の呼び出しに対応していません。「ツール対応」のモデルを選んでください。(${msg})`;
   if (/429|quota|rate/i.test(msg))
     return `利用上限(無料枠など)に達しました。しばらく待ってから再度お試しください。(${msg})`;
   if (/404|not found|model/i.test(msg))
@@ -56,7 +63,9 @@ export async function sendMessage(text: string, getCtx: () => AnalysisContext | 
   const provider = aiProviders[settings.ai.provider];
   const apiKey = useApiKeyStore.getState().keys[provider.id];
   const ctx = getCtx();
-  if (!apiKey || !ctx) return;
+  const modelId = settings.ai[provider.modelSetting];
+  if (!apiKey || !ctx || !modelId.trim()) return;
+  addRecent(modelId);
   syncChatDocument(ctx.doc.id);
   if (useAiStore.getState().busy) return;
 
@@ -104,7 +113,11 @@ export async function sendMessage(text: string, getCtx: () => AnalysisContext | 
   const run = async (withThinking: boolean) => {
     let received = false;
     const result = streamText({
-      model: provider.createModel(apiKey, settings.ai[provider.modelSetting]),
+      model: provider.createModel(
+        apiKey,
+        modelId,
+        withThinking ? { effort: settings.ai.effort, showThinking: settings.ai.showThinking } : {},
+      ),
       system: buildSystemPrompt(buildAppState(ctx, settings)),
       messages: history,
       tools: createAiTools(

@@ -186,9 +186,15 @@ function AiHelp() {
     <Stack gap="xs">
       <Text size="sm">
         AI は任意の機能です。使わなくても、エディタ・練習・分析はすべて利用できます。Google
-        Gemini・OpenAI・Anthropic Claude に対応し、モデルも選べます。
+        Gemini・OpenAI・Anthropic Claude・OpenRouter に対応し、モデルも選べます。
       </Text>
       <List size="sm" spacing="xs">
+        <List.Item>
+          <b>OpenRouter</b>:1 つのキーで多数のモデル(無料モデルを含む)を使えます。「設定 → AI →
+          OpenRouter」の「OpenRouter
+          でログイン」を押すと、キーを貼り付けずに使い始められます。モデルは選択パネルで検索・「無料のみ」「ツール対応のみ」などで絞り込み、★
+          でお気に入りに固定できます。アプリの機能を使う依頼(編集案など)には「ツール」対応のモデルが必要です。
+        </List.Item>
         <List.Item>
           「設定 → AI」で API キーを登録します。Google AI Studio の無料枠で試すのがおすすめです。
         </List.Item>

@@ -314,7 +314,7 @@ function ChatToolbar({ canReset }: { canReset: boolean }) {
     <Group gap="xs" wrap="nowrap" className={classes.toolbar}>
       <Select
         size="xs"
-        w={104}
+        w={116}
         value={settings.ai.provider}
         onChange={(v) => v && update({ ai: { provider: v as AiProviderId } })}
         data={Object.values(aiProviders).map((p) => ({
@@ -376,9 +376,10 @@ export function AiPage() {
     );
   }
 
+  const hasModel = Boolean(settings.ai[provider.modelSetting].trim());
   const send = (text: string) => {
     const t = text.trim();
-    if (!t || busy || !hasKey) return;
+    if (!t || busy || !hasKey || !hasModel) return;
     setInput('');
     void sendMessage(t, () => ctxRef.current);
   };
@@ -399,6 +400,11 @@ export function AiPage() {
       </ScrollArea>
       {hasKey && (
         <div className={classes.composer}>
+          {!hasModel && (
+            <Alert color="yellow" p="xs" mb={6}>
+              <Text size="sm">モデルが選ばれていません。上の欄からモデルを選んでください。</Text>
+            </Alert>
+          )}
           {items.length > 0 && (
             <ScrollArea type="never" mb={6}>
               <Group gap={6} wrap="nowrap">
@@ -468,7 +474,7 @@ export function AiPage() {
                   size="lg"
                   radius="xl"
                   onClick={() => send(input)}
-                  disabled={!input.trim()}
+                  disabled={!input.trim() || !hasModel}
                   aria-label="送信"
                 >
                   <IconArrowUp size={18} />
