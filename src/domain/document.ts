@@ -20,6 +20,10 @@ export const BlockSchema = z.object({
   pauseAfterSec: z.number().min(0).max(600).nullable().catch(null),
   /** 話さないメモ(推定時間に含めない) */
   note: z.string().catch(''),
+  /** 内容のタイプ(導入・結論・具体例など。domain/roles.ts の id)。null なら未設定 */
+  role: z.string().nullable().catch(null),
+  /** 書き方の案内(テンプレートから作った空の段落に薄く表示する。話す内容には含めない) */
+  hint: z.string().catch(''),
 });
 export type Block = z.infer<typeof BlockSchema>;
 

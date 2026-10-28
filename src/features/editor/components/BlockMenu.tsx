@@ -10,8 +10,10 @@ import {
   IconRowInsertBottom,
   IconRowInsertTop,
   IconTrash,
+  IconTrashX,
 } from '@tabler/icons-react';
 import type { Block } from '@/domain/document';
+import { canMoveSection } from '@/domain/sections';
 import { useDocumentStore } from '../documentStore';
 
 interface Props {
@@ -23,6 +25,8 @@ interface Props {
 
 export function BlockMenu({ block, index, count, onOpenSettings }: Props) {
   const s = useDocumentStore.getState;
+  const isHeading = block.kind === 'heading';
+  const blocks = () => s().doc?.blocks ?? [];
   const prevId = () => s().doc?.blocks[index - 1]?.id ?? null;
   return (
     <Menu position="bottom-end" withinPortal shadow="md" width={220}>
@@ -53,17 +57,17 @@ export function BlockMenu({ block, index, count, onOpenSettings }: Props) {
         <Menu.Divider />
         <Menu.Item
           leftSection={<IconArrowUp size={16} />}
-          disabled={index === 0}
+          disabled={isHeading ? !canMoveSection(blocks(), block.id, -1) : index === 0}
           onClick={() => s().moveBy(block.id, -1)}
         >
-          上へ移動
+          {isHeading ? 'セクションを上へ' : '上へ移動'}
         </Menu.Item>
         <Menu.Item
           leftSection={<IconArrowDown size={16} />}
-          disabled={index === count - 1}
+          disabled={isHeading ? !canMoveSection(blocks(), block.id, 1) : index === count - 1}
           onClick={() => s().moveBy(block.id, 1)}
         >
-          下へ移動
+          {isHeading ? 'セクションを下へ' : '下へ移動'}
         </Menu.Item>
         <Menu.Item
           leftSection={<IconCopy size={16} />}
@@ -92,8 +96,17 @@ export function BlockMenu({ block, index, count, onOpenSettings }: Props) {
           leftSection={<IconTrash size={16} />}
           onClick={() => s().removeBlock(block.id)}
         >
-          削除
+          {isHeading ? '見出しだけ削除' : '削除'}
         </Menu.Item>
+        {isHeading && (
+          <Menu.Item
+            color="red"
+            leftSection={<IconTrashX size={16} />}
+            onClick={() => s().removeSection(block.id)}
+          >
+            セクションごと削除
+          </Menu.Item>
+        )}
       </Menu.Dropdown>
     </Menu>
   );
