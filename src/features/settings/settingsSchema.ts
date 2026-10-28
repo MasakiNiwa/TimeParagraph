@@ -34,11 +34,13 @@ export const SettingsSchema = z.object({
   }),
   ai: section({
     /** 使う AI サービス */
-    provider: z.enum(['google', 'openai', 'anthropic']).catch('google'),
+    provider: z.enum(['google', 'openai', 'anthropic', 'openrouter']).catch('google'),
     // 最新の flash は混雑や長い思考で数分かかることがあるため、既定は軽い flash-lite にする
     googleModel: z.string().min(1).catch('gemini-flash-lite-latest'),
     openaiModel: z.string().min(1).catch('gpt-5.5'),
     anthropicModel: z.string().min(1).catch('claude-sonnet-5-5'),
+    /** OpenRouter のモデル(例: google/gemini-3.5-flash)。モデルの入れ替わりが激しいため既定は未選択 */
+    openrouterModel: z.string().catch(''),
     /** 対応しているモデルで思考過程を表示する */
     showThinking: z.boolean().catch(true),
     /**

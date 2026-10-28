@@ -1,6 +1,8 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogle } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { fetchOpenRouterModels } from './openrouterModels';
 import type { JSONValue, LanguageModel } from 'ai';
 import type { Settings } from '@/features/settings/settingsSchema';
 
@@ -13,14 +15,20 @@ export interface AiProvider {
   keyUrl: string;
   keyHint: string;
   /** 設定で使うモデル名のキー */
-  modelSetting: 'googleModel' | 'openaiModel' | 'anthropicModel';
+  modelSetting: 'googleModel' | 'openaiModel' | 'anthropicModel' | 'openrouterModel';
   /** 一覧を取得できないときの候補 */
   suggestedModels: string[];
-  createModel: (apiKey: string, modelId: string) => LanguageModel;
+  createModel: (apiKey: string, modelId: string, options?: ModelOptions) => LanguageModel;
   /** 利用できるモデルの一覧を API から取得する */
   listModels: (apiKey: string) => Promise<string[]>;
   /** 思考過程をストリームで受け取るためのオプション */
   thinkingOptions: Record<string, Record<string, JSONValue>>;
+}
+
+/** モデル作成時に渡す設定(思考の深さなどをモデル側の設定で受け取るプロバイダー用) */
+export interface ModelOptions {
+  effort?: Settings['ai']['effort'];
+  showThinking?: boolean;
 }
 
 async function getJson(url: string, init?: RequestInit) {
@@ -98,5 +106,29 @@ export const aiProviders: Record<AiProviderId, AiProvider> = {
       })) as { data?: { id: string }[] };
       return (json.data ?? []).map((m) => m.id);
     },
+  },
+  openrouter: {
+    id: 'openrouter',
+    label: 'OpenRouter',
+    keyUrl: 'https://openrouter.ai/keys',
+    keyHint:
+      '1 つのキーで多数のモデル(無料モデルを含む)を使えます。下の「OpenRouter でログイン」でもキーを受け取れます。',
+    modelSetting: 'openrouterModel',
+    suggestedModels: [],
+    // OpenRouter の思考の深さは、呼び出しごとの共通オプションではなくモデルの設定で指定する
+    createModel: (apiKey, modelId, options) =>
+      createOpenRouter({
+        apiKey,
+        compatibility: 'strict',
+        appName: 'TimeParagraph',
+        appUrl: 'https://masakiniwa.github.io/TimeParagraph/',
+      })(
+        modelId,
+        options?.effort
+          ? { reasoning: { effort: options.effort, exclude: !options.showThinking } }
+          : {},
+      ),
+    listModels: async () => (await fetchOpenRouterModels()).filter((m) => m.tools).map((m) => m.id),
+    thinkingOptions: {},
   },
 };

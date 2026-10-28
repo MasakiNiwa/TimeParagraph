@@ -82,7 +82,12 @@ scripts/          ビルド用スクリプト
 
 `features/ai/` にあります。AI は任意で、API キーがなければ AI ページに設定の案内を表示するだけです。
 
-- **プロバイダー**(`providers.ts`):Vercel AI SDK で Google Gemini / OpenAI / Anthropic Claude を同じ形で扱います。ブラウザから各 API を直接呼び出し、モデル一覧も各 API から取得します。
+- **プロバイダー**(`providers.ts`):Vercel AI SDK で Google Gemini / OpenAI / Anthropic Claude / OpenRouter を同じ形で扱います。ブラウザから各 API を直接呼び出し、モデル一覧も各 API から取得します。
+- **OpenRouter**
+  - `openrouterModels.ts`:公開のモデル一覧 API(キー不要)から、料金・ツール対応・思考対応を読み取ります。
+  - `ModelBrowser.tsx`:検索・絞り込み・お気に入り・最近使ったモデルを備えた選択パネルです(スマホは下から出るシート、PC はダイアログ)。
+  - `openrouterAuth.ts`:「OpenRouter でログイン」(OAuth PKCE)。`code_verifier` を localStorage に一時保存して認可ページへ移動し、戻ってきた `?code=` を API キーと交換します。手で貼り付けたキーとも併用できます。
+  - OpenRouter の思考の深さは、呼び出しごとの共通オプションではなく、モデル作成時の `reasoning` 設定で渡します。
 - **構造化データ**(`appState.ts`):原稿・推定・セクション・リハーサルを JSON にしてシステムプロンプトに埋め込みます。
 - **ツール**(`tools.ts`):AI はアプリの機能をツールとして呼び出します。
   - `get_document_state`:最新の状態を取得
