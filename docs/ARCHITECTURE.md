@@ -40,6 +40,13 @@ scripts/          ビルド用スクリプト
 - 段落ごとに `speedFactor`(話す速さの倍率)、`pauseAfterSec`(後の間)、`note`(話さないメモ)を持ちます。
 - `schemaVersion` を持ち、`parseDocument` で読み込み時の検証・移行を行います。
 
+## セクション・内容のタイプ・テンプレート
+
+- **セクション**(`domain/sections.ts`):ブロックはフラットな配列のまま、見出しから次の見出しの手前までを範囲として計算して移動します。見出しより前の段落の中にはセクションを入れません(段落の所属が変わるため)。
+- **内容のタイプ**(`domain/roles.ts`):ブロックの `role` に id を保存します。id は保存データに残るため変更しないでください。
+- **テンプレート**(`domain/templates.ts`):見出しの文言・タイプ・書き方の案内(`hint`)の並びです。自分のテンプレートは localStorage(`timeparagraph:templates`)に保存し、本文は含めません。
+- たたんだ状態やドラッグ中の状態は、`features/editor/editorUiStore.ts`(保存しない画面の状態)で管理します。
+
 ## 時間推定
 
 `src/domain/estimate.ts` の `Estimator` インターフェースで推定方式を差し替えられます。

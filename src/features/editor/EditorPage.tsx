@@ -8,6 +8,9 @@ import {
   IconHeading,
   IconPlus,
   IconTextPlus,
+  IconTemplate,
+  IconFold,
+  IconArrowsVertical,
 } from '@tabler/icons-react';
 import { useEffect } from 'react';
 import { PageContainer } from '@/components/PageContainer';
@@ -17,6 +20,8 @@ import { BulkInputModal } from './components/BulkInputModal';
 import { DocumentsModal } from './components/DocumentsModal';
 import { ExchangeMenuItems } from './components/ExchangeMenuItems';
 import { SummaryBar } from './components/SummaryBar';
+import { TemplateModal } from './components/TemplateModal';
+import { setAllCollapsed } from './editorUiStore';
 import { redo, undo, useDocumentStore } from './documentStore';
 import { createAndOpenDocument, runDocumentAction } from './persistence';
 import { SaveStatus } from './components/SaveStatus';
@@ -62,6 +67,7 @@ export function EditorPage() {
   const doc = useDocumentStore((s) => s.doc);
   const [docsOpened, docsModal] = useDisclosure(false);
   const [bulkOpened, bulkModal] = useDisclosure(false);
+  const [templateOpened, templateModal] = useDisclosure(false);
 
   useUndoShortcuts();
   useMorphAnalysis(doc?.blocks);
@@ -106,8 +112,25 @@ export function EditorPage() {
             >
               新しい原稿
             </Menu.Item>
+            <Menu.Item leftSection={<IconTemplate size={16} />} onClick={templateModal.open}>
+              構成テンプレート…
+            </Menu.Item>
             <Menu.Item leftSection={<IconTextPlus size={16} />} onClick={bulkModal.open}>
               テキストから一括入力
+            </Menu.Item>
+            <Menu.Item
+              leftSection={<IconFold size={16} />}
+              onClick={() =>
+                setAllCollapsed(doc.blocks.filter((b) => b.kind === 'heading').map((b) => b.id))
+              }
+            >
+              すべてのセクションをたたむ
+            </Menu.Item>
+            <Menu.Item
+              leftSection={<IconArrowsVertical size={16} />}
+              onClick={() => setAllCollapsed([])}
+            >
+              すべてのセクションを開く
             </Menu.Item>
             <Menu.Divider />
             <ExchangeMenuItems />
@@ -145,6 +168,7 @@ export function EditorPage() {
 
       <DocumentsModal opened={docsOpened} onClose={docsModal.close} />
       <BulkInputModal opened={bulkOpened} onClose={bulkModal.close} />
+      <TemplateModal opened={templateOpened} onClose={templateModal.close} />
     </PageContainer>
   );
 }

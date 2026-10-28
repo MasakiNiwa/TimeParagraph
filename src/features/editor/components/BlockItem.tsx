@@ -1,15 +1,18 @@
-import { ActionIcon, Badge, Group, Text, Textarea, TextInput } from '@mantine/core';
+import { ActionIcon, Badge, Group, Text, Textarea, TextInput, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconGripVertical } from '@tabler/icons-react';
+import { IconChevronDown, IconChevronRight, IconGripVertical } from '@tabler/icons-react';
 import { memo, useEffect, useRef, type KeyboardEvent, type RefObject } from 'react';
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
 import type { Block } from '@/domain/document';
 import type { BlockEstimate } from '@/domain/estimate';
 import { formatDuration, formatDurationJa } from '@/domain/format';
 import { useSettings } from '@/features/settings/settingsStore';
+import { getRole } from '@/domain/roles';
 import { useDocumentStore } from '../documentStore';
+import { toggleCollapsed } from '../editorUiStore';
 import { BlockMenu } from './BlockMenu';
 import { BlockSettingsModal } from './BlockSettingsModal';
+import { RolePicker } from './RolePicker';
 import classes from './BlockItem.module.css';
 
 export interface DragHandleProps {
@@ -28,6 +31,10 @@ interface Props {
   sectionSec: number | undefined;
   unitLabel: string;
   handle: DragHandleProps;
+  /** 見出しをたたんでいるか */
+  collapsed?: boolean;
+  /** 見出しの配下の段落数 */
+  childCount?: number;
 }
 
 const FONT_SIZE = { sm: 'sm', md: 'md', lg: 'lg' } as const;
@@ -121,7 +128,7 @@ function ParagraphItem({ block, index, count, number, estimate, unitLabel, handl
           autosize
           minRows={2}
           size={FONT_SIZE[fontSize]}
-          placeholder="話す内容を入力…"
+          placeholder={block.hint || getRole(block.role)?.hint || '話す内容を入力…'}
           value={block.text}
           onChange={(e) =>
             useDocumentStore.getState().updateBlock(block.id, { text: e.currentTarget.value })
@@ -137,6 +144,7 @@ function ParagraphItem({ block, index, count, number, estimate, unitLabel, handl
         )}
         <Group gap="xs" justify="space-between" wrap="nowrap" className={classes.meta}>
           <Group gap={8} wrap="wrap">
+            <RolePicker block={block} />
             <Text size="xs" c="dimmed">
               {formatDuration(estimate?.startSec ?? 0)} から
             </Text>
@@ -168,7 +176,15 @@ function ParagraphItem({ block, index, count, number, estimate, unitLabel, handl
   );
 }
 
-function HeadingItem({ block, index, count, sectionSec, handle }: Props) {
+function HeadingItem({
+  block,
+  index,
+  count,
+  sectionSec,
+  handle,
+  collapsed = false,
+  childCount = 0,
+}: Props) {
   const ref = useRef<HTMLInputElement>(null);
   useFocusRequest(block.id, ref);
   return (
@@ -176,33 +192,57 @@ function HeadingItem({ block, index, count, sectionSec, handle }: Props) {
       <div className={classes.side}>
         <DragHandle handle={handle} />
       </div>
-      <Group className={classes.body} gap="xs" wrap="nowrap" align="center">
-        <TextInput
-          ref={ref}
-          flex={1}
-          variant="unstyled"
-          size="lg"
-          placeholder="見出し"
-          value={block.text}
-          onChange={(e) =>
-            useDocumentStore.getState().updateBlock(block.id, { text: e.currentTarget.value })
-          }
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.nativeEvent.isComposing && !(e.ctrlKey || e.metaKey)) {
-              e.preventDefault();
-              useDocumentStore.getState().insertBlock(block.id);
-              return;
+      <div className={classes.body}>
+        <Group gap={4} wrap="nowrap" align="center">
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size="sm"
+            onClick={() => toggleCollapsed(block.id)}
+            aria-label={collapsed ? 'セクションを開く' : 'セクションをたたむ'}
+            aria-expanded={!collapsed}
+          >
+            {collapsed ? <IconChevronRight size={16} /> : <IconChevronDown size={16} />}
+          </ActionIcon>
+          <TextInput
+            ref={ref}
+            flex={1}
+            variant="unstyled"
+            size="lg"
+            placeholder="見出し"
+            value={block.text}
+            onChange={(e) =>
+              useDocumentStore.getState().updateBlock(block.id, { text: e.currentTarget.value })
             }
-            handleKeys(e, block, index);
-          }}
-          classNames={{ input: classes.headingInput }}
-          aria-label="見出し"
-        />
-        <Text size="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
-          計 {formatDuration(sectionSec ?? 0)}
-        </Text>
-        <BlockMenu block={block} index={index} count={count} />
-      </Group>
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.nativeEvent.isComposing && !(e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                // たたんでいると追加した段落が見えないので、開いてから追加する
+                if (collapsed) toggleCollapsed(block.id);
+                useDocumentStore.getState().insertBlock(block.id);
+                return;
+              }
+              handleKeys(e, block, index);
+            }}
+            classNames={{ input: classes.headingInput }}
+            aria-label="見出し"
+          />
+          <Text size="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
+            計 {formatDuration(sectionSec ?? 0)}
+          </Text>
+          <BlockMenu block={block} index={index} count={count} />
+        </Group>
+        <Group gap={8} pl={30} pb={2}>
+          <RolePicker block={block} />
+          {collapsed && (
+            <UnstyledButton onClick={() => toggleCollapsed(block.id)}>
+              <Text size="xs" c="dimmed">
+                {childCount} 段落をたたんでいます
+              </Text>
+            </UnstyledButton>
+          )}
+        </Group>
+      </div>
     </div>
   );
 }

@@ -19,6 +19,8 @@ function errorMessage(e: unknown): string {
   const msg = e instanceof Error ? e.message : String(e);
   if (/401|403|API key|api_key|invalid.*key/i.test(msg))
     return `API キーが正しくないか、権限がありません。設定を確認してください。(${msg})`;
+  if (/rate-limited upstream|temporarily rate-limited/i.test(msg))
+    return `このモデルは提供元が混雑していて、一時的に使えません(無料モデルでよく起きます)。時間をおくか、別のモデル(有料モデルなど)をお試しください。(${msg})`;
   if (/data policy|privacy|training/i.test(msg))
     return `このモデルは、OpenRouter のプライバシー設定で許可されていない提供元でしか使えません。OpenRouter の設定(Privacy)を確認するか、別のモデルを選んでください。(${msg})`;
   if (/402|credit|insufficient/i.test(msg))

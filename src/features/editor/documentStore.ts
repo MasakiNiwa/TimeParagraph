@@ -2,6 +2,7 @@ import { temporal } from 'zundo';
 import { create, useStore } from 'zustand';
 import type { TemporalState } from 'zundo';
 import { createBlock, newId, type Block, type TPDocument } from '@/domain/document';
+import { moveSectionBy, moveSectionTo, sectionBlockIds } from '@/domain/sections';
 
 /** フォーカス移動の要求(ブロック追加・分割・結合の後にカーソル位置を指定する) */
 export interface FocusRequest {
@@ -22,7 +23,12 @@ interface DocumentState {
   insertBlocks: (afterId: string | null, blocks: Block[]) => void;
   removeBlock: (id: string) => void;
   moveBlock: (id: string, toIndex: number) => void;
+  /** 1 つ上/下へ移動する。見出しは配下の段落ごと、隣のセクションと入れ替える */
   moveBy: (id: string, delta: number) => void;
+  /** 見出しを配下の段落ごと、ドロップ先(overId)の位置へ移動する */
+  moveSectionTo: (headingId: string, overId: string) => void;
+  /** 見出しと配下の段落をまとめて削除する */
+  removeSection: (headingId: string) => void;
   splitBlock: (id: string, offset: number) => void;
   mergeWithPrevious: (id: string) => void;
   duplicateBlock: (id: string) => void;
@@ -111,8 +117,24 @@ export const useDocumentStore = create<DocumentState>()(
             return next;
           }),
         moveBy: (id, delta) => {
-          get().moveBlock(id, indexOf(id) + delta);
+          const block = get().doc?.blocks.find((b) => b.id === id);
+          if (block?.kind === 'heading')
+            mapBlocks((bs) => moveSectionBy(bs, id, delta < 0 ? -1 : 1));
+          else get().moveBlock(id, indexOf(id) + delta);
           focusOn(id);
+        },
+        moveSectionTo: (headingId, overId) =>
+          mapBlocks((bs) => moveSectionTo(bs, headingId, overId)),
+        removeSection: (headingId) => {
+          const ids = new Set(sectionBlockIds(get().doc?.blocks ?? [], headingId));
+          if (ids.size === 0) return;
+          const i = indexOf(headingId);
+          const before = get().doc?.blocks[i - 1];
+          mapBlocks((bs) => {
+            const rest = bs.filter((b) => !ids.has(b.id));
+            return rest.length ? rest : [createBlock()];
+          });
+          focusOn(before?.id ?? get().doc!.blocks[0].id);
         },
         splitBlock: (id, offset) => {
           const block = get().doc?.blocks.find((b) => b.id === id);

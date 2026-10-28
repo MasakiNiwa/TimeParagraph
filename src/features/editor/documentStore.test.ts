@@ -78,3 +78,36 @@ it('分割・結合で本文の空白とメモを失わない', () => {
   s.mergeWithPrevious(ids()[1]);
   expect(useDocumentStore.getState().doc!.blocks[0].note).toContain('後半のメモ');
 });
+
+describe('セクション操作', () => {
+  const setup = () => {
+    useDocumentStore.getState().load(
+      createDocument({
+        blocks: [
+          createBlock({ kind: 'heading', text: 'A' }),
+          createBlock({ text: 'a1' }),
+          createBlock({ kind: 'heading', text: 'B' }),
+          createBlock({ text: 'b1' }),
+          createBlock({ text: 'b2' }),
+        ],
+      }),
+    );
+    return (t: string) => useDocumentStore.getState().doc!.blocks.find((b) => b.text === t)!.id;
+  };
+
+  it('見出しの上下移動は配下の段落ごと動き、1 回の Undo で戻る', () => {
+    const id = setup();
+    useDocumentStore.getState().moveBy(id('B'), -1);
+    expect(texts()).toEqual(['B', 'b1', 'b2', 'A', 'a1']);
+    undo();
+    expect(texts()).toEqual(['A', 'a1', 'B', 'b1', 'b2']);
+  });
+
+  it('ドラッグ相当の移動とセクションごとの削除', () => {
+    const id = setup();
+    useDocumentStore.getState().moveSectionTo(id('A'), id('b2'));
+    expect(texts()).toEqual(['B', 'b1', 'b2', 'A', 'a1']);
+    useDocumentStore.getState().removeSection(id('B'));
+    expect(texts()).toEqual(['A', 'a1']);
+  });
+});

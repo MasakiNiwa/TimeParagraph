@@ -1,4 +1,5 @@
 import { estimateDocument } from '@/domain/estimate';
+import { getRole } from '@/domain/roles';
 import type { Block } from '@/domain/document';
 import { APP_NAME, APP_VERSION } from '@/lib/appInfo';
 import { longSentencesTool } from '@/features/analysis/tools/LongSentences';
@@ -53,6 +54,8 @@ export function buildAppState(ctx: AnalysisContext, settings: Settings) {
       return {
         ref: blockRef(index),
         kind: b.kind,
+        // 内容のタイプ(導入・結論・具体例など)。構成を把握するために渡す
+        role: getRole(b.role)?.label,
         text: b.text,
         ...(b.kind === 'paragraph'
           ? {
