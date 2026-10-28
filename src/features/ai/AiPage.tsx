@@ -25,6 +25,7 @@ import {
   IconChevronDown,
   IconChevronUp,
   IconCheck,
+  IconLock,
   IconMessagePlus,
   IconPlayerStopFilled,
   IconSparkles,
@@ -38,6 +39,7 @@ import { useAnalysisContext } from '@/features/analysis/useAnalysisContext';
 import { useSettings, useSettingsStore } from '@/features/settings/settingsStore';
 import { resetChat, syncChatDocument, useAiStore, type ChatItem } from './aiStore';
 import { useApiKeyStore } from './apiKeys';
+import { UnlockForm } from './KeyEncryption';
 import { ModelPicker } from './ModelPicker';
 import { quickPrompts } from './prompt';
 import { ProposalCard } from './ProposalCard';
@@ -68,6 +70,22 @@ function SetupGuide({ providerLabel }: { providerLabel: string }) {
             設定を開く
           </Button>
         </Group>
+      </Stack>
+    </Card>
+  );
+}
+
+/** API キーが暗号化されていてロック中のとき */
+function UnlockGuide() {
+  return (
+    <Card withBorder padding="lg" m="auto" maw={520} w="100%">
+      <Stack gap="sm">
+        <Group gap="xs">
+          <IconLock size={20} />
+          <Text fw={600}>API キーはロックされています</Text>
+        </Group>
+        <Text size="sm">パスフレーズを入力すると、AI を使えるようになります。</Text>
+        <UnlockForm autoFocus />
       </Stack>
     </Card>
   );
@@ -310,6 +328,7 @@ function ChatToolbar({ canReset }: { canReset: boolean }) {
   const settings = useSettings();
   const update = useSettingsStore((s) => s.update);
   const keys = useApiKeyStore((s) => s.keys);
+  const locked = useApiKeyStore((s) => s.locked);
   return (
     <Group gap="xs" wrap="nowrap" className={classes.toolbar}>
       <Select
@@ -319,7 +338,7 @@ function ChatToolbar({ canReset }: { canReset: boolean }) {
         onChange={(v) => v && update({ ai: { provider: v as AiProviderId } })}
         data={Object.values(aiProviders).map((p) => ({
           value: p.id,
-          label: `${p.label.split(' ').pop()}${keys[p.id] ? '' : '(未設定)'}`,
+          label: `${p.label.split(' ').pop()}${keys[p.id] ? '' : locked ? '(ロック中)' : '(未設定)'}`,
         }))}
         allowDeselect={false}
         comboboxProps={{ withinPortal: true }}
@@ -352,6 +371,7 @@ export function AiPage() {
   const updateSettings = useSettingsStore((s) => s.update);
   const provider = aiProviders[settings.ai.provider];
   const hasKey = useApiKeyStore((s) => Boolean(s.keys[provider.id]));
+  const locked = useApiKeyStore((s) => s.locked);
   const { items, busy } = useAiStore();
   const [input, setInput] = useState('');
   // タッチ端末では Enter を改行にし、送信ボタンで送る
@@ -389,7 +409,9 @@ export function AiPage() {
       <ChatToolbar canReset={items.length > 0} />
       <ScrollArea className={classes.scroll} viewportRef={viewport} type="auto" offsetScrollbars>
         <div className={classes.messages}>
-          {!hasKey ? (
+          {locked ? (
+            <UnlockGuide />
+          ) : !hasKey ? (
             <SetupGuide providerLabel={provider.label} />
           ) : items.length === 0 ? (
             <EmptyState onPick={send} />

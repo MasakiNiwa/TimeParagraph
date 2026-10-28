@@ -13,6 +13,7 @@ import { useState } from 'react';
 import { useSettingsStore } from '@/features/settings/settingsStore';
 import { useApiKeyStore } from './apiKeys';
 import type { Settings } from '@/features/settings/settingsSchema';
+import { KeyEncryption } from './KeyEncryption';
 import { ModelPicker } from './ModelPicker';
 import { startOpenRouterLogin } from './openrouterAuth';
 import { effortLabels } from './effort';
@@ -50,7 +51,7 @@ function OpenRouterLogin({ hasKey }: { hasKey: boolean }) {
 
 export function AiSettings() {
   const { settings, update } = useSettingsStore();
-  const { keys, setKey, clearAll } = useApiKeyStore();
+  const { keys, setKey, clearAll, locked } = useApiKeyStore();
   const provider = aiProviders[settings.ai.provider];
   const key = keys[provider.id] ?? '';
 
@@ -83,7 +84,8 @@ export function AiSettings() {
             </Anchor>
           </>
         }
-        placeholder="未設定"
+        placeholder={locked ? 'ロック中(下の「API キーの暗号化」で解除)' : '未設定'}
+        disabled={locked}
         value={key}
         onChange={(e) => setKey(provider.id, e.currentTarget.value)}
         autoComplete="off"
@@ -121,7 +123,8 @@ export function AiSettings() {
       <Stack gap={4}>
         <Text size="xs" c="dimmed">
           ・API キーはこのブラウザ内(localStorage)にのみ保存され、選んだ AI
-          サービスへ直接送信されます。
+          サービスへ直接送信されます。下の「API
+          キーの暗号化」で、パスフレーズをかけて保存することもできます。
         </Text>
         <Text size="xs" c="dimmed">
           ・AI を使うと、原稿の内容が AI
@@ -131,6 +134,7 @@ export function AiSettings() {
           ・共用の端末では、使い終わったらキーを削除してください。
         </Text>
       </Stack>
+      <KeyEncryption />
       <Group>
         <Button
           variant="light"
