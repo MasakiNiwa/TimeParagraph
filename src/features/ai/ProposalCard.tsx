@@ -29,12 +29,24 @@ function EditView({ edit, blocks }: { edit: BlockEdit; blocks: Block[] }) {
           </Text>
         )}
       </Group>
-      {edit.op !== 'insert_after' && original && (
+      {edit.title !== undefined && (
+        <Text size="xs" mb={4}>
+          タイトル:
+          {original?.title && edit.op === 'replace' && (
+            <Text span size="xs" c="dimmed" td="line-through">
+              {original.title}
+            </Text>
+          )}
+          {original?.title && edit.op === 'replace' && ' → '}
+          <b>{edit.title}</b>
+        </Text>
+      )}
+      {edit.op !== 'insert_after' && original && (edit.op === 'delete' || edit.text) && (
         <Text size="sm" className={classes.before}>
           {original.text}
         </Text>
       )}
-      {edit.op !== 'delete' && (
+      {edit.op !== 'delete' && edit.text && (
         <Text size="sm" className={classes.after}>
           {edit.text}
         </Text>

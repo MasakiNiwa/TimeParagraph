@@ -1,4 +1,14 @@
-import { Button, Group, Loader, Menu, Stack, Text, TextInput, ActionIcon } from '@mantine/core';
+import {
+  ActionIcon,
+  Button,
+  Group,
+  Loader,
+  Menu,
+  SegmentedControl,
+  Stack,
+  Text,
+  TextInput,
+} from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { modals } from '@mantine/modals';
 import {
@@ -24,7 +34,7 @@ import { SummaryBar } from './components/SummaryBar';
 import { TemplateModal } from './components/TemplateModal';
 import { PlanModal } from './components/PlanModal';
 import { usePlanModal } from './editorUiStore';
-import { setAllCollapsed, useEditorUiStore } from './editorUiStore';
+import { setAllCollapsed, setView, useEditorUiStore } from './editorUiStore';
 import { HoistBar } from './components/HoistBar';
 import { redo, undo, useDocumentStore } from './documentStore';
 import { createAndOpenDocument, runDocumentAction } from './persistence';
@@ -74,6 +84,7 @@ export function EditorPage() {
   const [templateOpened, templateModal] = useDisclosure(false);
   const hoisted = useEditorUiStore((s) => s.hoisted);
   const planOpened = usePlanModal((s) => s.opened);
+  const view = useEditorUiStore((s) => s.view);
 
   useUndoShortcuts();
   useMorphAnalysis(doc?.blocks);
@@ -154,7 +165,22 @@ export function EditorPage() {
       <SummaryBar onClear={confirmClear} />
 
       <Stack gap="xs">
-        <HoistBar blocks={doc.blocks} />
+        <Group gap="xs" wrap="nowrap" justify="space-between">
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <HoistBar blocks={doc.blocks} />
+          </div>
+          <SegmentedControl
+            size="xs"
+            value={view}
+            onChange={(v) => setView(v as 'full' | 'outline')}
+            data={[
+              { value: 'full', label: '全文' },
+              { value: 'outline', label: '要点' },
+            ]}
+            aria-label="表示の切り替え"
+            title="要点:段落のタイトルと最初の文だけを並べて、話の筋を確かめます"
+          />
+        </Group>
         <BlockList blocks={doc.blocks} />
         <Group gap="xs" mt="xs" display={hoistedExists ? 'none' : undefined}>
           <Button

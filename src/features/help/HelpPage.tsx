@@ -8,6 +8,7 @@ import {
   IconDatabase,
   IconHeart,
   IconKeyboard,
+  IconListDetails,
   IconMicrophone,
   IconSparkles,
 } from '@tabler/icons-react';
@@ -44,6 +45,39 @@ function VersionCard() {
         </Text>
       </Stack>
     </Card>
+  );
+}
+
+function ParagraphWriting() {
+  return (
+    <Stack gap="sm">
+      <Text size="sm">
+        パラグラフライティングは、文章や話を「パラグラフ(段落)」単位で組み立てる方法です。聞き手が要点を見失わず、話し手も時間を段落ごとに管理しやすくなります。
+      </Text>
+      <List size="sm" spacing="xs">
+        <List.Item>
+          <b>1 段落 1 トピック</b>:1 つの段落では 1
+          つの要点だけを話します。段落の「タイトル」に要点を一言で書いておくと、ぶれにくくなります。
+        </List.Item>
+        <List.Item>
+          <b>最初の文で言い切る</b>
+          :段落の最初の文(トピックセンテンス)で要点を述べ、続く文で説明・理由・具体例を話します。
+        </List.Item>
+        <List.Item>
+          <b>総論 → 各論 → 結論</b>:最初に話全体の結論と要点の数を伝え、各論で 1
+          つずつ説明し、最後にもう一度まとめます。「構成テンプレート」の「パラグラフライティング」から始められます。
+        </List.Item>
+        <List.Item>
+          <b>縦読みで確かめる</b>
+          :エディタ上部の「要点」に切り替えると、各段落のタイトルと最初の文だけが並びます。これだけを読んで話の筋が通れば、構成ができています。要点表示のままドラッグで並べ替えることもできます。
+        </List.Item>
+      </List>
+      <Text size="sm">
+        分析の「パラグラフの構造」では、最初の文が長い・説明の文がない・文が多い・段落が長い(90
+        秒超)といった目安から外れた段落を一覧できます。AI
+        の「パラグラフの点検」「タイトルを付ける」で、書き換えやタイトルの案も頼めます。
+      </Text>
+    </Stack>
   );
 }
 
@@ -327,6 +361,12 @@ export function HelpPage() {
       <CollapsibleSections
         sections={[
           { id: 'usage', title: '使い方', icon: IconBook, content: <Usage /> },
+          {
+            id: 'paragraph-writing',
+            title: 'パラグラフライティング',
+            icon: IconListDetails,
+            content: <ParagraphWriting />,
+          },
           {
             id: 'practice',
             title: '練習(リハーサル・読み上げ)',

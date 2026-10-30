@@ -3,6 +3,7 @@ import { getRole } from '@/domain/roles';
 import type { Block } from '@/domain/document';
 import { APP_NAME, APP_VERSION } from '@/lib/appInfo';
 import { longSentencesTool } from '@/features/analysis/tools/LongSentences';
+import { paragraphStructureTool } from '@/features/analysis/tools/ParagraphStructure';
 import { planCompareTool } from '@/features/analysis/tools/PlanCompare';
 import { paragraphBalanceTool } from '@/features/analysis/tools/ParagraphBalance';
 import type { AnalysisContext } from '@/features/analysis/types';
@@ -78,6 +79,7 @@ export function buildAppState(ctx: AnalysisContext, settings: Settings) {
     analysis: {
       paragraphBalance: paragraphBalanceTool.summarize?.(ctx),
       plan: planCompareTool.summarize?.(ctx),
+      paragraphStructure: paragraphStructureTool.summarize?.(ctx),
       longSentences: longSentencesTool.summarize?.(ctx),
     },
     rehearsals: ctx.rehearsals.slice(0, 3).map((r) => ({

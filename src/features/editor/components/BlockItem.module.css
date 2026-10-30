@@ -151,3 +151,19 @@
 .num {
   font-variant-numeric: tabular-nums;
 }
+
+.card[data-outline] {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.outlineBody {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 0;
+  border-radius: var(--mantine-radius-sm);
+}
+
+.outlineTitle {
+  color: light-dark(var(--mantine-color-calm-8), var(--mantine-color-calm-2));
+}

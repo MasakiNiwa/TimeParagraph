@@ -94,7 +94,15 @@ export function createAiTools(
                 .describe(
                   '対象ブロックの ref(例: B3)。insert_after で先頭に追加するときは "START"',
                 ),
-              text: z.string().describe('replace / insert_after の新しい本文。delete では空文字'),
+              text: z
+                .string()
+                .describe(
+                  'replace / insert_after の新しい本文。delete と、replace でタイトルだけ変えるときは空文字',
+                ),
+              title: z
+                .string()
+                .optional()
+                .describe('段落のタイトル(この段落の要点を短く)。変えないときは省略か空文字'),
               kind: z
                 .enum(['paragraph', 'heading'])
                 .describe('insert_after で追加するブロックの種類。それ以外は paragraph'),
@@ -116,7 +124,8 @@ export function createAiTools(
           return {
             op: e.op,
             blockId: start ? null : (ctx.doc.blocks[idx]?.id ?? e.ref),
-            text: e.op === 'delete' ? undefined : e.text,
+            text: e.op === 'delete' || !e.text.trim() ? undefined : e.text,
+            title: e.op === 'delete' || !e.title?.trim() ? undefined : e.title.trim(),
             kind: e.op === 'insert_after' ? e.kind : undefined,
             reason: e.reason || undefined,
           };
