@@ -24,6 +24,8 @@ export const BlockSchema = z.object({
   note: z.string().catch(''),
   /** 内容のタイプ(導入・結論・具体例など。domain/roles.ts の id)。null なら未設定 */
   role: z.string().nullable().catch(null),
+  /** 計画した時間(秒)。見出しではセクション全体、段落ではその段落。null なら未設定 */
+  targetSec: z.number().min(0).max(36000).nullable().catch(null),
   /** 書き方の案内(テンプレートから作った空の段落に薄く表示する。話す内容には含めない) */
   hint: z.string().catch(''),
 });

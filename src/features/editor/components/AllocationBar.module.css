@@ -35,3 +35,25 @@
   border-radius: 1px;
   pointer-events: none;
 }
+
+/* 計画の帯(推定の帯の下に細く表示する) */
+.planTrack {
+  position: relative;
+  height: 4px;
+  margin-top: 3px;
+}
+
+.planSegment {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0.55;
+  border-right: 1px solid light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+
+  &:hover {
+    opacity: 0.9;
+  }
+}

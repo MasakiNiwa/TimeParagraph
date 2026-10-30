@@ -45,6 +45,7 @@ scripts/          ビルド用スクリプト
 - **セクション**(`domain/sections.ts`):ブロックはフラットな配列のまま、見出しから次の見出しの手前までを範囲として計算して移動します。見出しより前の段落の中にはセクションを入れません(段落の所属が変わるため)。
 - **内容のタイプ**(`domain/roles.ts`):ブロックの `role` に id を保存します。id は保存データに残るため変更しないでください。
 - **段落のタイトル**(`Block.title`):段落で言いたいことの短いメモで、推定時間には含めません。分析・練習でのラベル(`blockLabel`)に使い、Markdown では段落の先頭の太字の行(`**タイトル**`)として書き出し・取り込みします。
+- **時間配分の計画**(`domain/plan.ts`):見出しの `targetSec` はセクション全体、段落の `targetSec` はその段落の計画時間です。計画の単位(`planRows`)は、見出しがあればセクション(最初の見出しより前の段落は段落ごと)、なければ段落です。`distribute` は均等・今の比率・タイプの重み(`roles.ts` の `weight`)で割り振り、`planStatus` は 10% か 5 秒の許容幅で over / under / ok を判定します。分析ツール「計画と実際」(`PlanCompare.tsx`)の `summarize` を AI に渡します。
 - **表示だけの状態**(`features/editor/editorUiStore.ts`):たたんだ見出し(localStorage に保存)、ドラッグ中の見出し、「このセクションだけ表示」中の見出し。原稿データには含めません。
 - **テンプレート**(`domain/templates.ts`):見出しの文言・タイプ・書き方の案内(`hint`)の並びです。自分のテンプレートは localStorage(`timeparagraph:templates`)に保存し、本文は含めません。
 - たたんだ状態やドラッグ中の状態は、`features/editor/editorUiStore.ts`(保存しない画面の状態)で管理します。
