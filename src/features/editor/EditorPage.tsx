@@ -21,7 +21,8 @@ import { DocumentsModal } from './components/DocumentsModal';
 import { ExchangeMenuItems } from './components/ExchangeMenuItems';
 import { SummaryBar } from './components/SummaryBar';
 import { TemplateModal } from './components/TemplateModal';
-import { setAllCollapsed } from './editorUiStore';
+import { setAllCollapsed, useEditorUiStore } from './editorUiStore';
+import { HoistBar } from './components/HoistBar';
 import { redo, undo, useDocumentStore } from './documentStore';
 import { createAndOpenDocument, runDocumentAction } from './persistence';
 import { SaveStatus } from './components/SaveStatus';
@@ -68,6 +69,7 @@ export function EditorPage() {
   const [docsOpened, docsModal] = useDisclosure(false);
   const [bulkOpened, bulkModal] = useDisclosure(false);
   const [templateOpened, templateModal] = useDisclosure(false);
+  const hoisted = useEditorUiStore((s) => s.hoisted);
 
   useUndoShortcuts();
   useMorphAnalysis(doc?.blocks);
@@ -81,6 +83,8 @@ export function EditorPage() {
   }
 
   const lastId = doc.blocks[doc.blocks.length - 1]?.id ?? null;
+  const hoistedExists = hoisted !== null && doc.blocks.some((b) => b.id === hoisted);
+  const headingIds = doc.blocks.filter((b) => b.kind === 'heading').map((b) => b.id);
   const s = useDocumentStore.getState;
 
   return (
@@ -120,15 +124,13 @@ export function EditorPage() {
             </Menu.Item>
             <Menu.Item
               leftSection={<IconFold size={16} />}
-              onClick={() =>
-                setAllCollapsed(doc.blocks.filter((b) => b.kind === 'heading').map((b) => b.id))
-              }
+              onClick={() => setAllCollapsed(headingIds, true)}
             >
               すべてのセクションをたたむ
             </Menu.Item>
             <Menu.Item
               leftSection={<IconArrowsVertical size={16} />}
-              onClick={() => setAllCollapsed([])}
+              onClick={() => setAllCollapsed(headingIds, false)}
             >
               すべてのセクションを開く
             </Menu.Item>
@@ -142,8 +144,9 @@ export function EditorPage() {
       <SummaryBar onClear={confirmClear} />
 
       <Stack gap="xs">
+        <HoistBar blocks={doc.blocks} />
         <BlockList blocks={doc.blocks} />
-        <Group gap="xs" mt="xs">
+        <Group gap="xs" mt="xs" display={hoistedExists ? 'none' : undefined}>
           <Button
             variant="light"
             leftSection={<IconPlus size={16} />}

@@ -51,6 +51,8 @@ export const SettingsSchema = z.object({
   }),
   editor: section({
     fontSize: z.enum(['sm', 'md', 'lg']).catch('md'),
+    /** 段落のタイトル欄を表示する(オフでも、タイトルを入力済みの段落には表示する) */
+    paragraphTitles: z.boolean().catch(true),
   }),
 });
 

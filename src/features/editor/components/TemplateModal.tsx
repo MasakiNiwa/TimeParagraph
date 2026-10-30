@@ -38,7 +38,7 @@ function Outline({ t }: { t: Template }) {
           </Text>
         ) : (
           <Badge key={i} size="xs" variant="light" color={role?.color ?? 'gray'} tt="none">
-            {role?.label ?? '段落'}
+            {item.text ? `${role ? `${role.label}:` : ''}${item.text}` : (role?.label ?? '段落')}
           </Badge>
         );
       })}
@@ -104,7 +104,7 @@ export function TemplateModal({ opened, onClose }: { opened: boolean; onClose: (
       const s = useDocumentStore.getState();
       // 空の段落は取り除いてから末尾に追加する
       const kept = (s.doc?.blocks ?? []).filter(
-        (b) => b.kind !== 'paragraph' || b.text.trim() || b.role,
+        (b) => b.kind !== 'paragraph' || b.text.trim() || b.title.trim() || b.role,
       );
       s.setBlocks([...kept, ...blocks]);
     }

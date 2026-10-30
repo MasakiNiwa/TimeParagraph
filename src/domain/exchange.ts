@@ -19,13 +19,14 @@ export function exportJson(doc: TPDocument): string {
   );
 }
 
-/** Markdown(見出しは「## 」、段落は空行区切り)。メモは引用として残す */
+/** Markdown(見出しは「## 」、段落は空行区切り、段落のタイトルは太字の行)。メモは引用として残す */
 export function exportMarkdown(doc: TPDocument): string {
   const lines: string[] = [`# ${doc.title || '無題の原稿'}`, ''];
   for (const b of doc.blocks) {
     if (!b.text.trim()) continue;
     if (b.kind === 'heading') lines.push(`## ${b.text.trim()}`, '');
     else {
+      if (b.title.trim()) lines.push(`**${b.title.trim()}**`);
       lines.push(b.text.trim(), '');
       if (b.note.trim())
         lines.push(
@@ -58,7 +59,8 @@ export function exportTimedText(doc: TPDocument, est: DocumentEstimate): string 
     const e = est.byId.get(b.id);
     n++;
     lines.push(
-      `[${n}] ${formatDuration(e?.startSec ?? 0)}〜(約 ${formatDuration(e?.speakSec ?? 0)})`,
+      `[${n}] ${formatDuration(e?.startSec ?? 0)}〜(約 ${formatDuration(e?.speakSec ?? 0)})` +
+        (b.title.trim() ? ` ${b.title.trim()}` : ''),
       b.text.trim(),
       '',
     );

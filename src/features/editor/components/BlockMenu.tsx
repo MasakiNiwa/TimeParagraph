@@ -11,10 +11,12 @@ import {
   IconRowInsertTop,
   IconTrash,
   IconTrashX,
+  IconZoomIn,
 } from '@tabler/icons-react';
 import type { Block } from '@/domain/document';
 import { canMoveSection } from '@/domain/sections';
 import { useDocumentStore } from '../documentStore';
+import { setHoisted, useEditorUiStore } from '../editorUiStore';
 
 interface Props {
   block: Block;
@@ -26,6 +28,7 @@ interface Props {
 export function BlockMenu({ block, index, count, onOpenSettings }: Props) {
   const s = useDocumentStore.getState;
   const isHeading = block.kind === 'heading';
+  const isHoisted = useEditorUiStore((u) => u.hoisted === block.id);
   const blocks = () => s().doc?.blocks ?? [];
   const prevId = () => s().doc?.blocks[index - 1]?.id ?? null;
   return (
@@ -54,6 +57,14 @@ export function BlockMenu({ block, index, count, onOpenSettings }: Props) {
         >
           下に見出しを追加
         </Menu.Item>
+        {isHeading && (
+          <Menu.Item
+            leftSection={<IconZoomIn size={16} />}
+            onClick={() => setHoisted(isHoisted ? null : block.id)}
+          >
+            {isHoisted ? '全体の表示に戻る' : 'このセクションだけ表示'}
+          </Menu.Item>
+        )}
         <Menu.Divider />
         <Menu.Item
           leftSection={<IconArrowUp size={16} />}

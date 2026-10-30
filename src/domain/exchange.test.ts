@@ -8,7 +8,7 @@ const doc = createDocument({
   targetDurationSec: 120,
   blocks: [
     createBlock({ kind: 'heading', text: '導入' }),
-    createBlock({ text: 'あ'.repeat(300), note: 'ゆっくり' }),
+    createBlock({ text: 'あ'.repeat(300), note: 'ゆっくり', title: '要点' }),
     createBlock({ text: 'いいい', speedFactor: 1.2 }),
   ],
 });
@@ -30,13 +30,14 @@ describe('exchange', () => {
     const md = exportMarkdown(doc);
     expect(md).toContain('## 導入');
     expect(md).toContain('> ゆっくり');
+    expect(md).toContain('**要点**\n' + 'あ'.repeat(10));
     const r = importDocument(md, 'a.md');
     if (!r.ok) throw new Error(r.error);
     expect(r.doc.title).toBe('発表');
-    expect(r.doc.blocks.map((b) => [b.kind, b.text, b.note])).toEqual([
-      ['heading', '導入', ''],
-      ['paragraph', 'あ'.repeat(300), 'ゆっくり'],
-      ['paragraph', 'いいい', ''],
+    expect(r.doc.blocks.map((b) => [b.kind, b.title, b.text, b.note])).toEqual([
+      ['heading', '', '導入', ''],
+      ['paragraph', '要点', 'あ'.repeat(300), 'ゆっくり'],
+      ['paragraph', '', 'いいい', ''],
     ]);
   });
 
@@ -45,6 +46,15 @@ describe('exchange', () => {
     const t = exportTimedText(doc, est);
     expect(t).toContain('合計 1:02 / 目標 2:00');
     expect(t).toContain('[2] 1:01〜');
+  });
+
+  it('太字だけの段落はタイトルにしない(本文が続くときだけ)', () => {
+    const r = importDocument('**強調だけ**\n\n**題**\n本文', 'a.md');
+    if (!r.ok) throw new Error(r.error);
+    expect(r.doc.blocks.map((b) => [b.title, b.text])).toEqual([
+      ['', '**強調だけ**'],
+      ['題', '本文'],
+    ]);
   });
 
   it('壊れた JSON や空のテキストはエラーにする', () => {

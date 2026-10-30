@@ -14,7 +14,7 @@ export function usePracticeItems() {
         const e = estimate.byId.get(b.id);
         return {
           blockId: b.id,
-          excerpt: b.text.slice(0, 40),
+          excerpt: b.title.trim() || b.text.slice(0, 40),
           estimatedSec: (e?.speakSec ?? 0) + (e?.pauseSec ?? 0),
           pauseSec: e?.pauseSec ?? 0,
           weightedUnits: (e?.units ?? 0) / b.speedFactor,

@@ -56,6 +56,8 @@ export function buildAppState(ctx: AnalysisContext, settings: Settings) {
         kind: b.kind,
         // 内容のタイプ(導入・結論・具体例など)。構成を把握するために渡す
         role: getRole(b.role)?.label,
+        // 段落のタイトル(書き手が付けた要点のメモ)
+        title: b.title || undefined,
         text: b.text,
         ...(b.kind === 'paragraph'
           ? {

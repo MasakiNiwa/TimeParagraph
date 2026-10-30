@@ -1,6 +1,6 @@
 import { ActionIcon, Badge, Group, Text, Textarea, TextInput, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconChevronDown, IconChevronRight, IconGripVertical } from '@tabler/icons-react';
+import { IconChevronDown, IconChevronRight, IconGripVertical, IconPlus } from '@tabler/icons-react';
 import { memo, useEffect, useRef, type KeyboardEvent, type RefObject } from 'react';
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
 import type { Block } from '@/domain/document';
@@ -107,8 +107,25 @@ function DragHandle({ handle }: { handle: DragHandleProps }) {
   );
 }
 
+/** 左の列の「+」。そのブロックのすぐ下に段落を追加する(ポインタを乗せる/編集中に表示) */
+function AddBelow({ onAdd }: { onAdd: () => void }) {
+  return (
+    <ActionIcon
+      variant="subtle"
+      color="gray"
+      size="sm"
+      className={classes.addBelow}
+      onClick={onAdd}
+      aria-label="下に段落を追加"
+      title="下に段落を追加"
+    >
+      <IconPlus size={14} />
+    </ActionIcon>
+  );
+}
+
 function ParagraphItem({ block, index, count, number, estimate, unitLabel, handle }: Props) {
-  const fontSize = useSettings().editor.fontSize;
+  const { fontSize, paragraphTitles } = useSettings().editor;
   const ref = useRef<HTMLTextAreaElement>(null);
   const [settingsOpened, settings] = useDisclosure(false);
   useFocusRequest(block.id, ref);
@@ -120,8 +137,30 @@ function ParagraphItem({ block, index, count, number, estimate, unitLabel, handl
         <Text size="xs" c="dimmed" className={classes.number}>
           {number}
         </Text>
+        <AddBelow onAdd={() => useDocumentStore.getState().insertBlock(block.id)} />
       </div>
       <div className={classes.body}>
+        {(paragraphTitles || block.title) && (
+          <TextInput
+            variant="unstyled"
+            size="sm"
+            placeholder="タイトル(この段落で言いたいこと)"
+            value={block.title}
+            onChange={(e) =>
+              useDocumentStore.getState().updateBlock(block.id, { title: e.currentTarget.value })
+            }
+            onKeyDown={(e) => {
+              if (e.nativeEvent.isComposing) return;
+              // Enter / ↓ で本文へ
+              if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                useDocumentStore.getState().requestFocus(block.id, 0);
+              }
+            }}
+            classNames={{ input: classes.titleInput }}
+            aria-label={`パラグラフ ${number} のタイトル`}
+          />
+        )}
         <Textarea
           ref={ref}
           variant="unstyled"
@@ -191,6 +230,13 @@ function HeadingItem({
     <div className={classes.card} data-kind="heading">
       <div className={classes.side}>
         <DragHandle handle={handle} />
+        <AddBelow
+          onAdd={() => {
+            // たたんでいると追加した段落が見えないので、開いてから追加する
+            if (collapsed) toggleCollapsed(block.id);
+            useDocumentStore.getState().insertBlock(block.id);
+          }}
+        />
       </div>
       <div className={classes.body}>
         <Group gap={4} wrap="nowrap" align="center">

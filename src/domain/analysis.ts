@@ -1,4 +1,4 @@
-import type { Block, TPDocument } from './document';
+import { blockLabel, type Block, type TPDocument } from './document';
 import type { DocumentEstimate, EstimateOptions, Estimator, SectionSummary } from './estimate';
 import { splitSentences } from './sentences';
 
@@ -48,7 +48,7 @@ export function buildTimeTree(
         return {
           id: b.id,
           level: 'paragraph',
-          label: `段落${paragraphNo}: ${excerpt(b.text, 16)}`,
+          label: `段落${paragraphNo}: ${blockLabel(b, 16)}`,
           sec: (e?.speakSec ?? 0) + (e?.pauseSec ?? 0),
           units: e?.units ?? 0,
           blockId: b.id,
@@ -128,7 +128,7 @@ export function paragraphStats(
     all.push({
       blockId: b.id,
       index: all.length + 1,
-      label: excerpt(b.text, 20),
+      label: blockLabel(b, 20),
       sec: e?.speakSec ?? 0,
       ratio: 0,
     });
