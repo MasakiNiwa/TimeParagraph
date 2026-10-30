@@ -9,7 +9,8 @@ import { formatDuration, formatDurationJa } from '@/domain/format';
 import { useSettings } from '@/features/settings/settingsStore';
 import { getRole } from '@/domain/roles';
 import { useDocumentStore } from '../documentStore';
-import { toggleCollapsed } from '../editorUiStore';
+import { setView, toggleCollapsed } from '../editorUiStore';
+import { topicSentence } from '@/domain/paragraphWriting';
 import { BlockMenu } from './BlockMenu';
 import { BlockSettingsModal } from './BlockSettingsModal';
 import { RolePicker } from './RolePicker';
@@ -321,6 +322,67 @@ function HeadingItem({
   );
 }
 
-export const BlockItem = memo(function BlockItem(props: Props) {
-  return props.block.kind === 'heading' ? <HeadingItem {...props} /> : <ParagraphItem {...props} />;
+/**
+ * 要点だけの表示(縦読み)。タイトルと最初の文(トピックセンテンス)だけを見せ、
+ * 段落の要点を順に読んで話の筋が通るかを確かめる。押すと全文表示でその段落を開く
+ */
+function ParagraphOutlineItem({ block, number, estimate, handle }: Props) {
+  const topic = topicSentence(block.text);
+  const rest = block.text.trim().length > topic.length;
+  const role = getRole(block.role);
+  const open = () => {
+    setView('full');
+    useDocumentStore.getState().requestFocus(block.id, 0);
+  };
+  return (
+    <div className={classes.card} data-kind="paragraph" data-outline>
+      <div className={classes.side}>
+        <DragHandle handle={handle} />
+      </div>
+      <UnstyledButton
+        className={classes.outlineBody}
+        onClick={open}
+        aria-label={`パラグラフ ${number} を開く`}
+      >
+        <Group gap={6} wrap="nowrap" align="baseline">
+          <Text size="xs" c="dimmed" className={classes.number}>
+            {number}
+          </Text>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            {block.title.trim() && (
+              <Text size="sm" fw={600} className={classes.outlineTitle}>
+                {block.title}
+              </Text>
+            )}
+            <Text size="sm" c={block.title.trim() ? 'dimmed' : undefined} lineClamp={2}>
+              {topic || (
+                <Text span c="dimmed" size="sm">
+                  (空の段落)
+                </Text>
+              )}
+              {rest && (
+                <Text span c="dimmed" size="xs">
+                  {' '}
+                  …
+                </Text>
+              )}
+            </Text>
+          </div>
+          {role && (
+            <Badge size="xs" variant="light" color={role.color} tt="none" style={{ flexShrink: 0 }}>
+              {role.label}
+            </Badge>
+          )}
+          <Text size="xs" c="dimmed" className={classes.num} style={{ flexShrink: 0 }}>
+            {formatDuration((estimate?.speakSec ?? 0) + (estimate?.pauseSec ?? 0))}
+          </Text>
+        </Group>
+      </UnstyledButton>
+    </div>
+  );
+}
+
+export const BlockItem = memo(function BlockItem(props: Props & { outline?: boolean }) {
+  if (props.block.kind === 'heading') return <HeadingItem {...props} />;
+  return props.outline ? <ParagraphOutlineItem {...props} /> : <ParagraphItem {...props} />;
 });

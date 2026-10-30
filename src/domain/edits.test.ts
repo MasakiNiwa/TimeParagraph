@@ -53,3 +53,18 @@ it('削除済みの段落を後続操作で参照した提案を拒否する', (
     ]).ok,
   ).toBe(false);
 });
+
+it('タイトルだけの書き換えと、タイトル付きの追加ができる', () => {
+  const blocks = [createBlock({ text: '本文です。', title: '古い' })];
+  const edits = [
+    { op: 'replace' as const, blockId: blocks[0].id, title: '新しい要点' },
+    { op: 'insert_after' as const, blockId: blocks[0].id, text: '追加の本文', title: '追加の要点' },
+  ];
+  expect(validateEdits(blocks, edits).ok).toBe(true);
+  const out = applyEdits(blocks, edits);
+  expect(out.map((b) => [b.title, b.text])).toEqual([
+    ['新しい要点', '本文です。'],
+    ['追加の要点', '追加の本文'],
+  ]);
+  expect(validateEdits(blocks, [{ op: 'replace', blockId: blocks[0].id }]).ok).toBe(false);
+});

@@ -77,6 +77,7 @@ export function BlockList({ blocks }: { blocks: Block[] }) {
   const collapsed = useEditorUiStore((s) => s.collapsed);
   const dragging = useEditorUiStore((s) => s.draggingHeading);
   const hoistedId = useEditorUiStore((s) => s.hoisted);
+  const outline = useEditorUiStore((s) => s.view === 'outline');
   const hoisted = blocks.some((b) => b.id === hoistedId) ? hoistedId : null;
   // たたんでいる見出し・ドラッグ中の見出しの配下の段落は表示しない。
   // 「このセクションだけ表示」中は、そのセクション以外を表示しない
@@ -168,7 +169,7 @@ export function BlockList({ blocks }: { blocks: Block[] }) {
       measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
     >
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-        <Stack gap="xs">
+        <Stack gap={outline ? 4 : 'xs'}>
           {blocks.map((block, i) =>
             hidden.has(block.id) ? null : (
               <Fragment key={block.id}>
@@ -188,10 +189,12 @@ export function BlockList({ blocks }: { blocks: Block[] }) {
                         dragging === block.id
                       }
                       childCount={childCount.get(block.id) ?? 0}
+                      outline={outline}
                     />
                   )}
                 </Sortable>
-                {addRowAfter.has(block.id) &&
+                {!outline &&
+                  addRowAfter.has(block.id) &&
                   !(
                     block.kind === 'heading' &&
                     collapsed.includes(block.id) &&

@@ -2,6 +2,7 @@ import type { AnalysisTool } from '../types';
 import { longSentencesTool } from './LongSentences';
 import { paragraphBalanceTool } from './ParagraphBalance';
 import { planCompareTool } from './PlanCompare';
+import { paragraphStructureTool } from './ParagraphStructure';
 import { rehearsalCompareTool } from './RehearsalCompare';
 import { timeDrilldownTool } from './TimeDrilldown';
 
@@ -9,6 +10,7 @@ import { timeDrilldownTool } from './TimeDrilldown';
 export const analysisTools: AnalysisTool[] = [
   timeDrilldownTool,
   planCompareTool,
+  paragraphStructureTool,
   paragraphBalanceTool,
   longSentencesTool,
   rehearsalCompareTool,

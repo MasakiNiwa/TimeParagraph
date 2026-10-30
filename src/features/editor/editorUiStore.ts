@@ -9,6 +9,8 @@ interface EditorUiState {
   draggingHeading: string | null;
   /** 「このセクションだけ表示」している見出し */
   hoisted: string | null;
+  /** 全文表示、または要点(タイトル・最初の文)だけのアウトライン表示 */
+  view: 'full' | 'outline';
 }
 
 /** 保存しておく、たたんだ見出しの数の上限(古いものから捨てる) */
@@ -20,15 +22,18 @@ export const useEditorUiStore = create<EditorUiState>()(
       collapsed: [] as string[],
       draggingHeading: null as string | null,
       hoisted: null as string | null,
+      view: 'full' as 'full' | 'outline',
     }),
     {
       name: 'timeparagraph:editor-ui',
       version: 1,
-      partialize: (s) => ({ collapsed: s.collapsed }),
+      partialize: (s) => ({ collapsed: s.collapsed, view: s.view }),
       merge: (persisted, current) => {
-        const c = (persisted as { collapsed?: unknown } | undefined)?.collapsed;
+        const p = persisted as { collapsed?: unknown; view?: unknown } | undefined;
+        const c = p?.collapsed;
         return {
           ...current,
+          view: p?.view === 'outline' ? 'outline' : 'full',
           collapsed: Array.isArray(c) ? c.filter((x): x is string => typeof x === 'string') : [],
         };
       },
@@ -50,6 +55,11 @@ export function setAllCollapsed(allHeadingIds: string[], collapse: boolean) {
     const rest = s.collapsed.filter((id) => !allHeadingIds.includes(id));
     return { collapsed: collapse ? [...rest, ...allHeadingIds].slice(-MAX_COLLAPSED) : rest };
   });
+}
+
+/** 全文表示と、要点だけのアウトライン表示を切り替える */
+export function setView(view: 'full' | 'outline') {
+  useEditorUiStore.setState({ view });
 }
 
 export function setHoisted(headingId: string | null) {
