@@ -55,3 +55,6 @@ export function setAllCollapsed(allHeadingIds: string[], collapse: boolean) {
 export function setHoisted(headingId: string | null) {
   useEditorUiStore.setState({ hoisted: headingId });
 }
+
+/** 「時間配分を計画」ダイアログ(配分バーや分析ページからも開く) */
+export const usePlanModal = create<{ opened: boolean }>(() => ({ opened: false }));

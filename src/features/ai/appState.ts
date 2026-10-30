@@ -3,6 +3,7 @@ import { getRole } from '@/domain/roles';
 import type { Block } from '@/domain/document';
 import { APP_NAME, APP_VERSION } from '@/lib/appInfo';
 import { longSentencesTool } from '@/features/analysis/tools/LongSentences';
+import { planCompareTool } from '@/features/analysis/tools/PlanCompare';
 import { paragraphBalanceTool } from '@/features/analysis/tools/ParagraphBalance';
 import type { AnalysisContext } from '@/features/analysis/types';
 import type { Settings } from '@/features/settings/settingsSchema';
@@ -58,6 +59,8 @@ export function buildAppState(ctx: AnalysisContext, settings: Settings) {
         role: getRole(b.role)?.label,
         // 段落のタイトル(書き手が付けた要点のメモ)
         title: b.title || undefined,
+        // 計画した時間(見出しはセクション全体、段落はその段落)。未設定なら省く
+        plannedSec: b.targetSec ?? undefined,
         text: b.text,
         ...(b.kind === 'paragraph'
           ? {
@@ -74,6 +77,7 @@ export function buildAppState(ctx: AnalysisContext, settings: Settings) {
     // よく使う分析結果を最初から渡し、ツール呼び出しの往復を減らす
     analysis: {
       paragraphBalance: paragraphBalanceTool.summarize?.(ctx),
+      plan: planCompareTool.summarize?.(ctx),
       longSentences: longSentencesTool.summarize?.(ctx),
     },
     rehearsals: ctx.rehearsals.slice(0, 3).map((r) => ({

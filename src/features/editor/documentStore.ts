@@ -34,6 +34,8 @@ interface DocumentState {
   duplicateBlock: (id: string) => void;
   clearBlocks: () => void;
   setBlocks: (blocks: Block[]) => void;
+  /** 時間配分の計画をまとめて設定する(1 回の「元に戻す」で戻せる) */
+  setPlan: (targets: Record<string, number | null>, docTargetSec?: number | null) => void;
   requestFocus: (id: string, caret?: number | 'end') => void;
 }
 
@@ -185,6 +187,11 @@ export const useDocumentStore = create<DocumentState>()(
           focusOn(first.id);
         },
         setBlocks: (blocks) => mutate(() => ({ blocks: blocks.length ? blocks : [createBlock()] })),
+        setPlan: (targets, docTargetSec) =>
+          mutate((d) => ({
+            blocks: d.blocks.map((b) => (b.id in targets ? { ...b, targetSec: targets[b.id] } : b)),
+            ...(docTargetSec !== undefined ? { targetDurationSec: docTargetSec } : {}),
+          })),
         requestFocus: (id, caret = 'end') => focusOn(id, caret),
       };
     },

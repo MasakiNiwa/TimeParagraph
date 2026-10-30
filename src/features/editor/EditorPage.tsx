@@ -11,6 +11,7 @@ import {
   IconTemplate,
   IconFold,
   IconArrowsVertical,
+  IconChartBarPopular,
 } from '@tabler/icons-react';
 import { useEffect } from 'react';
 import { PageContainer } from '@/components/PageContainer';
@@ -21,6 +22,8 @@ import { DocumentsModal } from './components/DocumentsModal';
 import { ExchangeMenuItems } from './components/ExchangeMenuItems';
 import { SummaryBar } from './components/SummaryBar';
 import { TemplateModal } from './components/TemplateModal';
+import { PlanModal } from './components/PlanModal';
+import { usePlanModal } from './editorUiStore';
 import { setAllCollapsed, useEditorUiStore } from './editorUiStore';
 import { HoistBar } from './components/HoistBar';
 import { redo, undo, useDocumentStore } from './documentStore';
@@ -70,6 +73,7 @@ export function EditorPage() {
   const [bulkOpened, bulkModal] = useDisclosure(false);
   const [templateOpened, templateModal] = useDisclosure(false);
   const hoisted = useEditorUiStore((s) => s.hoisted);
+  const planOpened = usePlanModal((s) => s.opened);
 
   useUndoShortcuts();
   useMorphAnalysis(doc?.blocks);
@@ -118,6 +122,12 @@ export function EditorPage() {
             </Menu.Item>
             <Menu.Item leftSection={<IconTemplate size={16} />} onClick={templateModal.open}>
               構成テンプレート…
+            </Menu.Item>
+            <Menu.Item
+              leftSection={<IconChartBarPopular size={16} />}
+              onClick={() => usePlanModal.setState({ opened: true })}
+            >
+              時間配分を計画…
             </Menu.Item>
             <Menu.Item leftSection={<IconTextPlus size={16} />} onClick={bulkModal.open}>
               テキストから一括入力
@@ -172,6 +182,7 @@ export function EditorPage() {
       <DocumentsModal opened={docsOpened} onClose={docsModal.close} />
       <BulkInputModal opened={bulkOpened} onClose={bulkModal.close} />
       <TemplateModal opened={templateOpened} onClose={templateModal.close} />
+      <PlanModal opened={planOpened} onClose={() => usePlanModal.setState({ opened: false })} />
     </PageContainer>
   );
 }

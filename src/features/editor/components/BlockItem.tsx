@@ -13,6 +13,8 @@ import { toggleCollapsed } from '../editorUiStore';
 import { BlockMenu } from './BlockMenu';
 import { BlockSettingsModal } from './BlockSettingsModal';
 import { RolePicker } from './RolePicker';
+import { PLAN_COLORS, PlanTargetPopover, PlanTimeText } from './PlanTarget';
+import { planStatus } from '@/domain/plan';
 import classes from './BlockItem.module.css';
 
 export interface DragHandleProps {
@@ -126,6 +128,8 @@ function AddBelow({ onAdd }: { onAdd: () => void }) {
 
 function ParagraphItem({ block, index, count, number, estimate, unitLabel, handle }: Props) {
   const { fontSize, paragraphTitles } = useSettings().editor;
+  // 計画と比べるのは、段落の後の間も含めた時間
+  const paragraphSec = (estimate?.speakSec ?? 0) + (estimate?.pauseSec ?? 0);
   const ref = useRef<HTMLTextAreaElement>(null);
   const [settingsOpened, settings] = useDisclosure(false);
   useFocusRequest(block.id, ref);
@@ -203,9 +207,28 @@ function ParagraphItem({ block, index, count, number, estimate, unitLabel, handl
             )}
           </Group>
           <Group gap={4} wrap="nowrap">
-            <Badge variant="light" size="md" tt="none" className={classes.time}>
-              約{formatDurationJa(estimate?.speakSec ?? 0)}
-            </Badge>
+            <PlanTargetPopover
+              blockId={block.id}
+              targetSec={block.targetSec}
+              kind="paragraph"
+              label="段落の計画時間を設定"
+            >
+              <Badge
+                variant="light"
+                size="md"
+                tt="none"
+                className={classes.time}
+                color={
+                  block.targetSec === null
+                    ? undefined
+                    : PLAN_COLORS[planStatus(paragraphSec, block.targetSec)]
+                }
+              >
+                {block.targetSec === null
+                  ? `約${formatDurationJa(estimate?.speakSec ?? 0)}`
+                  : `約${formatDurationJa(paragraphSec)} / ${formatDurationJa(block.targetSec)}`}
+              </Badge>
+            </PlanTargetPopover>
             <BlockMenu block={block} index={index} count={count} onOpenSettings={settings.open} />
           </Group>
         </Group>
@@ -273,9 +296,14 @@ function HeadingItem({
             classNames={{ input: classes.headingInput }}
             aria-label="見出し"
           />
-          <Text size="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
-            計 {formatDuration(sectionSec ?? 0)}
-          </Text>
+          <PlanTargetPopover
+            blockId={block.id}
+            targetSec={block.targetSec}
+            kind="section"
+            label="セクションの計画時間を設定"
+          >
+            <PlanTimeText prefix="計 " actualSec={sectionSec ?? 0} targetSec={block.targetSec} />
+          </PlanTargetPopover>
           <BlockMenu block={block} index={index} count={count} />
         </Group>
         <Group gap={8} pl={30} pb={2}>

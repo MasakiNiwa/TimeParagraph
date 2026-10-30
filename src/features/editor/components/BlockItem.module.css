@@ -138,3 +138,16 @@
     border-color: light-dark(var(--mantine-color-calm-4), var(--mantine-color-calm-7));
   }
 }
+
+.planButton {
+  border-radius: var(--mantine-radius-sm);
+  line-height: 1;
+
+  &:focus-visible {
+    outline: 2px solid var(--mantine-primary-color-filled);
+  }
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
