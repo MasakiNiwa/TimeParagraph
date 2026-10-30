@@ -82,3 +82,59 @@
     color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
   }
 }
+
+.titleInput {
+  font-weight: 600;
+  min-height: 0;
+  height: auto;
+  line-height: 1.4;
+  padding: 0 0 2px;
+  color: light-dark(var(--mantine-color-calm-8), var(--mantine-color-calm-2));
+
+  &::placeholder {
+    font-weight: 400;
+    color: light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-3));
+  }
+}
+
+/* 「+」は、ポインタを乗せたときと編集中だけ見せる(誤タップを防ぐため、見えないときは押せない) */
+.addBelow {
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.card:focus-within .addBelow {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* タッチ操作ではタップ後も :hover が残るので、マウスなどのときだけ */
+@media (hover: hover) {
+  .card:hover .addBelow {
+    visibility: visible;
+    opacity: 1;
+  }
+}
+
+.addRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 32px;
+  border-radius: var(--mantine-radius-md);
+  border: 1px dashed light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  font-size: var(--mantine-font-size-xs);
+  color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-2));
+  opacity: 0.7;
+  transition:
+    opacity 120ms ease,
+    border-color 120ms ease;
+
+  &:hover,
+  &:focus-visible {
+    opacity: 1;
+    border-color: light-dark(var(--mantine-color-calm-4), var(--mantine-color-calm-7));
+  }
+}

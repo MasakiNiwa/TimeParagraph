@@ -5,7 +5,7 @@ import { getRole } from './roles';
 /** 構成テンプレートの 1 項目(見出し、または段落の枠) */
 export const TemplateItemSchema = z.object({
   kind: z.enum(['heading', 'paragraph']),
-  /** 見出しの文言(段落では使わない) */
+  /** 見出しの文言。段落では段落のタイトル */
   text: z.string().catch(''),
   role: z.string().nullable().catch(null),
   /** 段落に表示する書き方の案内。空ならタイプの既定の案内 */
@@ -131,6 +131,7 @@ export function templateToBlocks(t: Template): Block[] {
     item.kind === 'heading'
       ? createBlock({ kind: 'heading', text: item.text, role: item.role })
       : createBlock({
+          title: item.text,
           role: item.role,
           hint: item.hint || getRole(item.role)?.hint || '',
         }),
@@ -138,16 +139,16 @@ export function templateToBlocks(t: Template): Block[] {
 }
 
 /**
- * 原稿の構成をテンプレートにする。見出しの文言・タイプ・案内は残し、段落の本文は含めない。
- * 本文が空でタイプもない段落は省く(構成として意味がないため)。
+ * 原稿の構成をテンプレートにする。見出しの文言・段落のタイトル・タイプ・案内は残し、段落の本文は含めない。
+ * 本文・タイトル・タイプのどれもない段落は省く(構成として意味がないため)。
  */
 export function blocksToTemplate(blocks: Block[], name: string, id: string): Template {
   const items: TemplateItem[] = blocks
-    .filter((b) => b.kind === 'heading' || b.role || b.text.trim())
+    .filter((b) => b.kind === 'heading' || b.role || b.title.trim() || b.text.trim())
     .map((b) =>
       b.kind === 'heading'
         ? { kind: 'heading', text: b.text, role: b.role, hint: '' }
-        : { kind: 'paragraph', text: '', role: b.role, hint: b.hint },
+        : { kind: 'paragraph', text: b.title, role: b.role, hint: b.hint },
     );
   return { id, name, description: '', items: items.length ? items : [p('detail')] };
 }

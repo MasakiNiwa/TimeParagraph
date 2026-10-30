@@ -82,7 +82,9 @@ export const useDocumentStore = create<DocumentState>()(
         },
         setTarget: (targetDurationSec) => mutate(() => ({ targetDurationSec })),
         updateBlock: (id, patch) => {
-          if (Object.keys(patch).length === 1 && 'text' in patch) pendingKey = `text:${id}`;
+          const keys = Object.keys(patch);
+          if (keys.length === 1 && (keys[0] === 'text' || keys[0] === 'title'))
+            pendingKey = `${keys[0]}:${id}`;
           mapBlocks((bs) => bs.map((b) => (b.id === id ? { ...b, ...patch } : b)));
         },
         insertBlock: (afterId, partial) => {

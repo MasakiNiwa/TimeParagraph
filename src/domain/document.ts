@@ -14,6 +14,8 @@ export const BlockSchema = z.object({
   id: z.string().min(1),
   kind: BlockKindSchema.catch('paragraph'),
   text: z.string().catch(''),
+  /** 段落のタイトル(この段落で言いたいことを短く。話す内容には含めない) */
+  title: z.string().catch(''),
   /** 話す速さの倍率(1 = 設定どおり)。パラグラフごとにゆっくり/速めを指定する */
   speedFactor: z.number().min(0.25).max(4).catch(1),
   /** このブロックの後の間(秒)。null なら設定の既定値を使う */
@@ -74,6 +76,20 @@ export function parseDocument(input: unknown): TPDocument | null {
   return result.success ? result.data : null;
 }
 
+/** 段落の先頭行が「**タイトル**」だけなら、段落のタイトルとして扱う(Markdown の書き出しと対応) */
+function paragraphFromLines(lines: string[]): Block {
+  const m = /^\*\*(.+)\*\*$/.exec(lines[0]?.trim() ?? '');
+  if (m && lines.length > 1)
+    return createBlock({ title: m[1].trim(), text: lines.slice(1).join('\n') });
+  return createBlock({ text: lines.join('\n') });
+}
+
+/** 段落を表す短いラベル。タイトルがあればタイトル、なければ本文の冒頭 */
+export function blockLabel(block: Pick<Block, 'title' | 'text'>, n = 24): string {
+  const t = block.title.trim() || block.text.trim();
+  return t.length > n ? `${t.slice(0, n)}…` : t;
+}
+
 /** 空行区切りのテキストをブロック列に変換する。`# ` で始まる行は見出しとして扱う */
 export function textToBlocks(text: string): Block[] {
   return text
@@ -86,7 +102,7 @@ export function textToBlocks(text: string): Block[] {
       const blocks: Block[] = [];
       let buf: string[] = [];
       const flush = () => {
-        if (buf.length) blocks.push(createBlock({ text: buf.join('\n') }));
+        if (buf.length) blocks.push(paragraphFromLines(buf));
         buf = [];
       };
       for (const line of lines) {

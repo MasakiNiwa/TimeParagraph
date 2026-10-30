@@ -210,6 +210,12 @@ function DisplaySettings() {
           ]}
         />
       </div>
+      <Switch
+        label="段落のタイトル欄を表示する"
+        description="段落の上に、要点をメモするタイトル欄を表示します。オフにしても、入力済みのタイトルは表示されます"
+        checked={settings.editor.paragraphTitles}
+        onChange={(e) => update({ editor: { paragraphTitles: e.currentTarget.checked } })}
+      />
     </Stack>
   );
 }

@@ -35,6 +35,7 @@ describe('templates', () => {
         createBlock({ text: '秘密の本文', role: 'claim' }),
         createBlock({ text: '' }),
         createBlock({ text: 'タイプなしの本文' }),
+        createBlock({ title: '要点のメモ', role: 'reason' }),
       ],
       'マイ構成',
       'my',
@@ -43,7 +44,9 @@ describe('templates', () => {
       { kind: 'heading', text: '導入', role: 'intro', hint: '' },
       { kind: 'paragraph', text: '', role: 'claim', hint: '' },
       { kind: 'paragraph', text: '', role: null, hint: '' },
+      { kind: 'paragraph', text: '要点のメモ', role: 'reason', hint: '' },
     ]);
     expect(JSON.stringify(t)).not.toContain('秘密');
+    expect(templateToBlocks(t)[3].title).toBe('要点のメモ');
   });
 });
