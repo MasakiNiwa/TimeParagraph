@@ -10,6 +10,13 @@ import {
   type VaultKey,
 } from './keyVault';
 import type { AiProviderId } from './providers';
+import {
+  BioSchema,
+  BiometricError,
+  registerBiometric,
+  unlockWithBiometric,
+  type Bio,
+} from './biometric';
 
 type Keys = Partial<Record<AiProviderId, string>>;
 
@@ -37,6 +44,13 @@ interface ApiKeyState {
   lock: () => void;
   changePassphrase: (passphrase: string) => Promise<void>;
   disableEncryption: () => void;
+  /** 生体認証で解除するための情報(暗号化したパスフレーズ)。null なら未登録 */
+  bio: Bio | null;
+  /** 生体認証を登録する。パスフレーズが違うときは BiometricError */
+  enableBiometric: (passphrase: string) => Promise<void>;
+  disableBiometric: () => void;
+  /** 生体認証で解除する。失敗したときは BiometricError */
+  unlockWithBiometric: () => Promise<void>;
 }
 
 const KeysSchema = z.record(z.string(), z.string());
@@ -68,6 +82,7 @@ export const useApiKeyStore = create<ApiKeyState>()(
         vault: null,
         locked: false,
         pending: {},
+        bio: null,
         setKey: (provider, key) => {
           const value = key.trim();
           if (get().locked) {
@@ -79,7 +94,7 @@ export const useApiKeyStore = create<ApiKeyState>()(
         },
         clearAll: () => {
           vaultKey = null;
-          set({ keys: {}, vault: null, locked: false, pending: {} });
+          set({ keys: {}, vault: null, locked: false, pending: {}, bio: null });
         },
         enableEncryption: async (passphrase) => {
           const vk = await createVaultKey(passphrase);
@@ -107,12 +122,33 @@ export const useApiKeyStore = create<ApiKeyState>()(
         changePassphrase: async (passphrase) => {
           if (get().locked || !get().vault) return;
           vaultKey = await createVaultKey(passphrase);
+          // 生体認証は古いパスフレーズを暗号化しているので、登録し直してもらう
+          set({ bio: null });
           await reseal();
         },
         disableEncryption: () => {
           if (get().locked) return;
           vaultKey = null;
-          set({ vault: null });
+          set({ vault: null, bio: null });
+        },
+        enableBiometric: async (passphrase) => {
+          const vault = get().vault;
+          if (!vault || get().locked) return;
+          // 登録する前に、パスフレーズが正しいことを確かめる
+          if (!(await openVault(vault, passphrase)))
+            throw new BiometricError('パスフレーズが違います。');
+          const bio = await registerBiometric(passphrase);
+          if (get().vault) set({ bio });
+        },
+        disableBiometric: () => set({ bio: null }),
+        unlockWithBiometric: async () => {
+          const bio = get().bio;
+          if (!bio) throw new BiometricError('生体認証が登録されていません。');
+          const passphrase = await unlockWithBiometric(bio);
+          if (!(await get().unlock(passphrase)))
+            throw new BiometricError(
+              '生体認証の情報が古くなっています。パスフレーズで解除し、登録し直してください。',
+            );
         },
       };
     },
@@ -120,12 +156,21 @@ export const useApiKeyStore = create<ApiKeyState>()(
       name: 'timeparagraph:ai-keys',
       version: 2,
       // 暗号化中は暗号文だけを保存する
-      partialize: (s): Partial<ApiKeyState> => (s.vault ? { vault: s.vault } : { keys: s.keys }),
+      partialize: (s): Partial<ApiKeyState> =>
+        s.vault ? { vault: s.vault, bio: s.bio } : { keys: s.keys },
       migrate: (persisted) => persisted as Partial<ApiKeyState>,
       merge: (persisted, current) => {
-        const p = (persisted ?? {}) as { keys?: unknown; vault?: unknown };
+        const p = (persisted ?? {}) as { keys?: unknown; vault?: unknown; bio?: unknown };
         const vault = VaultSchema.safeParse(p.vault);
-        if (vault.success) return { ...current, vault: vault.data, keys: {}, locked: true };
+        const bio = BioSchema.safeParse(p.bio);
+        if (vault.success)
+          return {
+            ...current,
+            vault: vault.data,
+            bio: bio.success ? bio.data : null,
+            keys: {},
+            locked: true,
+          };
         const keys = KeysSchema.safeParse(p.keys);
         return { ...current, vault: null, keys: keys.success ? (keys.data as Keys) : {} };
       },

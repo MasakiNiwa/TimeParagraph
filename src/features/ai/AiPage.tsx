@@ -84,7 +84,7 @@ function UnlockGuide() {
           <IconLock size={20} />
           <Text fw={600}>API キーはロックされています</Text>
         </Group>
-        <Text size="sm">パスフレーズを入力すると、AI を使えるようになります。</Text>
+        <Text size="sm">ロックを解除すると、AI を使えるようになります。</Text>
         <UnlockForm autoFocus />
       </Stack>
     </Card>
