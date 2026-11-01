@@ -52,3 +52,12 @@
   line-height: 1.85;
   white-space: pre-wrap;
 }
+
+/* 読み上げ中の文 */
+.sentence {
+  color: inherit;
+  background: light-dark(var(--mantine-color-yellow-2), rgba(250, 200, 80, 0.22));
+  border-radius: 3px;
+  padding: 0 1px;
+  transition: background-color 150ms ease;
+}

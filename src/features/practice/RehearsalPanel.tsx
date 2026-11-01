@@ -2,6 +2,7 @@ import { Alert, Button, Group, Menu, Progress, Stack, Text } from '@mantine/core
 import {
   IconPlayerPlayFilled,
   IconPlayerTrackNextFilled,
+  IconPlayerTrackPrevFilled,
   IconPresentation,
   IconFlag,
   IconTrash,
@@ -9,6 +10,7 @@ import {
 import { notifications } from '@mantine/notifications';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { formatDuration } from '@/domain/format';
+import { PACE_BASIS_LABELS, paceDrift, paceText } from '@/domain/pace';
 import { useEstimator } from '@/features/estimation/useEstimator';
 import {
   currentSegmentSec,
@@ -17,6 +19,8 @@ import {
   finishRehearsal,
   nextParagraph,
   pauseRehearsal,
+  plannedOf,
+  previousParagraph,
   resetRehearsal,
   resumeRehearsal,
   startRehearsal,
@@ -57,6 +61,9 @@ function useRehearsalKeys(active: boolean) {
       if (e.key === ' ' || e.key === 'ArrowRight') {
         e.preventDefault();
         nextParagraph();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        previousParagraph();
       } else if (e.key.toLowerCase() === 'p') {
         e.preventDefault();
         const s = useRehearsalStore.getState().status;
@@ -70,7 +77,7 @@ function useRehearsalKeys(active: boolean) {
 }
 
 export function RehearsalPanel() {
-  const { doc, estimate, items } = usePracticeItems();
+  const { doc, estimate, items, paceBasis } = usePracticeItems();
   const { method, unitsPerMinute } = useEstimator();
   const state = useRehearsalStore();
   const active = state.status === 'running' || state.status === 'paused';
@@ -108,18 +115,20 @@ export function RehearsalPanel() {
       method,
       unitsPerMinute,
       blocks: doc.blocks,
+      paceBasis,
     });
 
   const current = active ? state.items[state.index] : undefined;
   const segSec = currentSegmentSec(state);
   const totalSec = elapsedTotalSec(state);
   const estTotal = (active ? state.items : items).reduce((a, i) => a + i.estimatedSec, 0);
-  const segRatio = current ? segSec / Math.max(current.estimatedSec, 0.1) : 0;
-  // ここまでに使ってよい時間(推定ベース)との差
-  const plannedSoFar =
-    state.items.slice(0, state.index).reduce((a, i) => a + i.estimatedSec, 0) +
-    Math.min(segSec, current?.estimatedSec ?? 0);
-  const drift = totalSec - plannedSoFar;
+  // ペースは計画(なければ目標ペース、推定)を基準にする
+  const basis = (active ? state.meta?.paceBasis : paceBasis) ?? 'estimate';
+  const basisLabel = PACE_BASIS_LABELS[basis];
+  const plannedTotal = (active ? state.items : items).reduce((a, i) => a + plannedOf(i), 0);
+  const segPlanned = plannedOf(current);
+  const segRatio = current ? segSec / Math.max(segPlanned, 0.1) : 0;
+  const drift = paceDrift(state.items.map(plannedOf), state.index, segSec, totalSec);
 
   return (
     <Stack gap="xs">
@@ -157,9 +166,9 @@ export function RehearsalPanel() {
           <Group justify="space-between" wrap="wrap">
             <div>
               <Text size="xs" c="dimmed">
-                推定
+                {basis === 'estimate' ? '推定' : `${basisLabel}(推定 ${formatDuration(estTotal)})`}
               </Text>
-              <Text className={classes.timer}>{formatDuration(estTotal)}</Text>
+              <Text className={classes.timer}>{formatDuration(plannedTotal)}</Text>
             </div>
             <Group gap="xs" wrap="nowrap">
               <Button
@@ -183,13 +192,13 @@ export function RehearsalPanel() {
             <Group justify="space-between" wrap="nowrap" align="flex-end">
               <div>
                 <Text size="xs" c="dimmed">
-                  経過 / 推定
+                  経過 / {basisLabel}
                 </Text>
                 <Text className={classes.timer} aria-live="off">
                   {formatDuration(totalSec)}
                   <Text span size="sm" c="dimmed" fw={500}>
                     {' '}
-                    / {formatDuration(estTotal)}
+                    / {formatDuration(plannedTotal)}
                   </Text>
                 </Text>
               </div>
@@ -197,12 +206,13 @@ export function RehearsalPanel() {
                 <Text size="xs" c="dimmed">
                   段落 {state.index + 1} / {state.items.length}
                 </Text>
-                <Text size="sm" fw={600} className={classes.small}>
-                  {drift >= 0 ? '+' : '−'}
-                  {formatDuration(Math.abs(drift))}
-                  <Text span size="xs" c="dimmed" fw={400}>
-                    {drift >= 0 ? ' 遅れ' : ' 先行'}
-                  </Text>
+                <Text
+                  size="sm"
+                  fw={600}
+                  className={classes.small}
+                  c={drift > 5 ? 'orange' : undefined}
+                >
+                  {paceText(drift, basis)}
                 </Text>
               </div>
             </Group>
@@ -213,16 +223,29 @@ export function RehearsalPanel() {
               aria-label="この段落の経過"
             />
             <Text size="xs" c="dimmed" className={classes.small}>
-              この段落 {formatDuration(segSec)} / 推定 {formatDuration(current?.estimatedSec ?? 0)}
+              この段落 {formatDuration(segSec)} / {basisLabel} {formatDuration(segPlanned)}
             </Text>
-            <Button
-              fullWidth
-              size="lg"
-              leftSection={<IconPlayerTrackNextFilled size={20} />}
-              onClick={nextParagraph}
-            >
-              {state.index + 1 >= state.items.length ? '終了して結果を見る' : '次の段落へ'}
-            </Button>
+            <Group gap="xs" wrap="nowrap">
+              <Button
+                size="lg"
+                variant="default"
+                px="sm"
+                onClick={previousParagraph}
+                disabled={state.index === 0}
+                aria-label="前の段落へ"
+                title="前の段落へ(←)"
+              >
+                <IconPlayerTrackPrevFilled size={20} />
+              </Button>
+              <Button
+                style={{ flex: 1 }}
+                size="lg"
+                leftSection={<IconPlayerTrackNextFilled size={20} />}
+                onClick={nextParagraph}
+              >
+                {state.index + 1 >= state.items.length ? '終了して結果を見る' : '次の段落へ'}
+              </Button>
+            </Group>
             <Group gap="xs" wrap="nowrap" grow>
               <Button
                 size="xs"
@@ -257,7 +280,7 @@ export function RehearsalPanel() {
           </Stack>
         )}
       </div>
-      <RehearsalHistory docId={doc.id} />
+      <RehearsalHistory docId={doc.id} targetSec={doc.targetDurationSec} />
       {presenter && active && <PresenterView onClose={closePresenter} />}
     </Stack>
   );

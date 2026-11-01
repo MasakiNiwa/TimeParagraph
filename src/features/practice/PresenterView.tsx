@@ -3,17 +3,21 @@ import {
   IconMaximize,
   IconPlayerPauseFilled,
   IconPlayerPlayFilled,
+  IconPlayerTrackPrevFilled,
   IconX,
 } from '@tabler/icons-react';
 import { useCallback, useEffect, useRef } from 'react';
 import { useFocusTrap } from '@mantine/hooks';
 import { formatDuration } from '@/domain/format';
+import { paceDrift, paceText } from '@/domain/pace';
 import { useDocumentStore } from '@/features/editor/documentStore';
 import {
   currentSegmentSec,
   elapsedTotalSec,
   nextParagraph,
   pauseRehearsal,
+  plannedOf,
+  previousParagraph,
   resumeRehearsal,
   useRehearsalStore,
 } from '@/features/rehearsal/rehearsalStore';
@@ -34,11 +38,16 @@ export function PresenterView({ onClose }: { onClose: () => void }) {
   const blocks = useDocumentStore((s) => s.doc?.blocks ?? []);
   const current = state.items[state.index];
   const next = state.items[state.index + 1];
-  const textOf = (id?: string) => blocks.find((b) => b.id === id)?.text ?? '';
+  const blockOf = (id?: string) => blocks.find((b) => b.id === id);
+  const textOf = (id?: string) => blockOf(id)?.text ?? '';
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
+      else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        previousParagraph();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => {
@@ -56,12 +65,14 @@ export function PresenterView({ onClose }: { onClose: () => void }) {
 
   const total = elapsedTotalSec(state);
   const seg = currentSegmentSec(state);
-  const estTotal = state.items.reduce((a, i) => a + i.estimatedSec, 0);
-  const planned =
-    state.items.slice(0, state.index).reduce((a, i) => a + i.estimatedSec, 0) +
-    Math.min(seg, current.estimatedSec);
-  const drift = total - planned;
-  const ratio = seg / Math.max(current.estimatedSec, 0.1);
+  // ペースは計画(なければ目標ペース、推定)を基準にする
+  const basis = state.meta?.paceBasis ?? 'estimate';
+  const plannedTotal = state.items.reduce((a, i) => a + plannedOf(i), 0);
+  const drift = paceDrift(state.items.map(plannedOf), state.index, seg, total);
+  const segPlanned = plannedOf(current);
+  const ratio = seg / Math.max(segPlanned, 0.1);
+  const title = blockOf(current.blockId)?.title.trim();
+  const nextTitle = blockOf(next?.blockId)?.title.trim();
 
   return (
     <Portal>
@@ -79,16 +90,27 @@ export function PresenterView({ onClose }: { onClose: () => void }) {
               {formatDuration(total)}
               <Text span className={classes.sub}>
                 {' '}
-                / {formatDuration(estTotal)}
+                / {formatDuration(plannedTotal)}
               </Text>
             </Text>
             <Text className={classes.sub} data-over={drift > 5 || undefined}>
-              {drift >= 0 ? '+' : '−'}
-              {formatDuration(Math.abs(drift))} {drift >= 0 ? '遅れ' : '先行'} ・ 段落{' '}
-              {state.index + 1}/{state.items.length}
+              {paceText(drift, basis)} ・ 段落 {state.index + 1}/{state.items.length} ・ この段落{' '}
+              {formatDuration(seg)} / {formatDuration(segPlanned)}
             </Text>
           </div>
           <Group gap={4} wrap="nowrap">
+            <Tooltip label="前の段落へ(←)">
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="lg"
+                onClick={previousParagraph}
+                disabled={state.index === 0}
+                aria-label="前の段落へ"
+              >
+                <IconPlayerTrackPrevFilled size={20} />
+              </ActionIcon>
+            </Tooltip>
             <Tooltip label="全画面">
               <ActionIcon
                 variant="subtle"
@@ -145,10 +167,17 @@ export function PresenterView({ onClose }: { onClose: () => void }) {
             }
           }}
         >
+          {title && <Text className={classes.title}>{title}</Text>}
           <Text className={classes.current}>{textOf(current.blockId)}</Text>
-          {next && <Text className={classes.next}>次:{textOf(next.blockId)}</Text>}
+          {next && (
+            <Text className={classes.next}>
+              次:{nextTitle ? `【${nextTitle}】` : ''}
+              {textOf(next.blockId)}
+            </Text>
+          )}
           <Text className={classes.hint}>
-            画面をタップ / スペースキーで次へ{state.status === 'paused' && '(一時停止中)'}
+            画面をタップ / スペースキーで次へ ・ ← で前へ
+            {state.status === 'paused' && '(一時停止中)'}
           </Text>
         </div>
       </div>

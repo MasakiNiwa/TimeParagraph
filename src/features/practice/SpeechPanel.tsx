@@ -49,7 +49,7 @@ import classes from './ControlDock.module.css';
 export function SpeechPanel() {
   const { doc, estimate, items } = usePracticeItems();
   const { method, unitsPerMinute } = useEstimator();
-  const { status, currentId, measuring, error } = useSpeechStore();
+  const { status, currentId, sentenceIndex, measuring, error } = useSpeechStore();
   const [result, setResult] = useState<Rehearsal | null>(null);
   const { voiceURI, rate } = useSettings().speech;
   const update = useSettingsStore((s) => s.update);
@@ -122,7 +122,7 @@ export function SpeechPanel() {
       <Prompter
         blocks={blocks}
         estimate={estimate}
-        state={{ currentId }}
+        state={{ currentId, sentenceIndex }}
         onSelect={measuring ? undefined : (id) => speakFrom(blocks, id)}
       />
       <div className={classes.dock}>

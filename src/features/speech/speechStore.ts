@@ -9,6 +9,8 @@ interface SpeechState {
   status: SpeechStatus;
   /** 読み上げ中(または一時停止中)のブロック */
   currentId: string | null;
+  /** 読み上げ中の文の番号(段落内、0 始まり)。文を強調表示するために使う */
+  sentenceIndex: number | null;
   /** 読み上げで時間を計測中か */
   measuring: boolean;
   error: string | null;
@@ -17,6 +19,7 @@ interface SpeechState {
 export const useSpeechStore = create<SpeechState>(() => ({
   status: 'idle',
   currentId: null,
+  sentenceIndex: null,
   measuring: false,
   error: null,
 }));
@@ -132,7 +135,11 @@ function speakCurrent() {
     stop(true);
     return;
   }
-  useSpeechStore.setState({ status: 'playing', currentId: item.blockId });
+  useSpeechStore.setState({
+    status: 'playing',
+    currentId: item.blockId,
+    sentenceIndex: sentenceIdx < item.sentences.length ? sentenceIdx : null,
+  });
   const sentence = item.sentences[sentenceIdx];
   if (sentence === undefined) {
     onBlockEnd(gen);
@@ -260,7 +267,7 @@ export function stop(completed = false) {
   clearPauseTimer();
   if (speechSupported) speechSynthesis.cancel();
   queue = [];
-  useSpeechStore.setState({ status: 'idle', currentId: null });
+  useSpeechStore.setState({ status: 'idle', currentId: null, sentenceIndex: null });
   if (measure) finishMeasure(completed);
   gap = null;
   pausedAt = null;

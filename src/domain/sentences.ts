@@ -24,3 +24,19 @@ export function splitSentences(text: string): string[] {
   if (buf.trim()) out.push(buf.trim());
   return out;
 }
+
+/**
+ * 元のテキストの中で、各文が占める範囲 [start, end)。
+ * 改行や空白を保ったまま、文単位で強調表示するために使う
+ */
+export function sentenceRanges(text: string): [number, number][] {
+  const out: [number, number][] = [];
+  let from = 0;
+  for (const s of splitSentences(text)) {
+    const start = text.indexOf(s, from);
+    if (start < 0) break;
+    out.push([start, start + s.length]);
+    from = start + s.length;
+  }
+  return out;
+}

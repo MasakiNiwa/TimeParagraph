@@ -67,3 +67,10 @@
   font-size: 0.8rem;
   color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-3));
 }
+
+/* 段落のタイトル(要点)。話す前に何を言う段落かがわかるように */
+.title {
+  font-size: clamp(1rem, 2.2vw, 1.5rem);
+  font-weight: 700;
+  color: light-dark(var(--mantine-color-calm-7), var(--mantine-color-calm-3));
+}
