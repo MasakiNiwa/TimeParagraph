@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import type { Block } from '@/domain/document';
 import type { DocumentEstimate } from '@/domain/estimate';
 import { formatDuration } from '@/domain/format';
+import { sentenceRanges } from '@/domain/sentences';
 import { useSettings } from '@/features/settings/settingsStore';
 import classes from './Prompter.module.css';
 
@@ -13,6 +14,24 @@ export interface PrompterState {
   actualById?: Map<string, number>;
   /** 強調中の段落に添える案内 */
   currentHint?: string;
+  /** 強調中の段落で、読み上げ中の文の番号 */
+  sentenceIndex?: number | null;
+}
+
+/** 段落の本文。読み上げ中の文があれば、その文だけを強調する */
+function ParagraphText({ text, sentenceIndex }: { text: string; sentenceIndex?: number | null }) {
+  const range =
+    sentenceIndex === null || sentenceIndex === undefined
+      ? undefined
+      : sentenceRanges(text)[sentenceIndex];
+  if (!range) return <Text className={classes.text}>{text}</Text>;
+  return (
+    <Text className={classes.text}>
+      {text.slice(0, range[0])}
+      <mark className={classes.sentence}>{text.slice(range[0], range[1])}</mark>
+      {text.slice(range[1])}
+    </Text>
+  );
 }
 
 /** 原稿を大きな文字で表示し、現在の段落を強調する */
@@ -72,7 +91,10 @@ export function Prompter({
               }
             }}
           >
-            <Text className={classes.text}>{b.text}</Text>
+            <ParagraphText
+              text={b.text}
+              sentenceIndex={current ? state.sentenceIndex : undefined}
+            />
             <Group gap="xs" mt={6}>
               <Text size="xs" c="dimmed">
                 {formatDuration(e?.startSec ?? 0)} から ・ 推定 {formatDuration(est)}

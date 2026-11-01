@@ -13,6 +13,8 @@ export const LapSchema = z.object({
   pauseSec: z.number(),
   /** 文字数または拍数を段落の速さの倍率で割ったもの(話速の補正に使う) */
   weightedUnits: z.number(),
+  /** ペースの基準とした予定時間(秒)。古い記録にはない */
+  plannedSec: z.number().optional(),
 });
 export type Lap = z.infer<typeof LapSchema>;
 

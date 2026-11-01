@@ -3,8 +3,15 @@ import { IconHistory, IconTrash } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { formatDuration } from '@/domain/format';
 import { deleteRehearsal, listRehearsals } from '@/features/rehearsal/rehearsalStore';
+import { RehearsalTrend } from './RehearsalTrend';
 
-export function RehearsalHistory({ docId }: { docId: string }) {
+export function RehearsalHistory({
+  docId,
+  targetSec = null,
+}: {
+  docId: string;
+  targetSec?: number | null;
+}) {
   const history = useLiveQuery(() => listRehearsals(docId), [docId]);
   if (!history?.length) return null;
 
@@ -16,6 +23,7 @@ export function RehearsalHistory({ docId }: { docId: string }) {
         </Accordion.Control>
         <Accordion.Panel>
           <Stack gap={6}>
+            <RehearsalTrend history={history} targetSec={targetSec} />
             {history.map((r) => (
               <Group key={r.id} justify="space-between" wrap="nowrap">
                 <div>

@@ -3,6 +3,7 @@ import { newId, type Block } from '@/domain/document';
 import { notifications } from '@mantine/notifications';
 import type { Lap, Rehearsal } from '@/domain/rehearsal';
 import { db } from '@/lib/db';
+import type { PaceBasis } from '@/domain/pace';
 
 /** リハーサル対象の段落(開始時点のスナップショット) */
 export interface RehearsalItem {
@@ -11,6 +12,8 @@ export interface RehearsalItem {
   estimatedSec: number;
   pauseSec: number;
   weightedUnits: number;
+  /** ペースの基準となる予定時間(秒)。計画・目標時間・推定のいずれか(domain/pace.ts) */
+  plannedSec?: number;
 }
 
 export type RehearsalStatus = 'idle' | 'running' | 'paused' | 'finished';
@@ -33,6 +36,8 @@ interface RehearsalState {
     method: string;
     unitsPerMinute: number;
     blocks?: Block[];
+    /** ペースの基準(計画・目標ペース・推定) */
+    paceBasis?: PaceBasis;
   } | null;
   startedAt: number;
 }
@@ -106,6 +111,25 @@ export function nextParagraph() {
     segmentResumedAt: s.status === 'running' ? now() : null,
   });
 }
+
+/**
+ * 前の段落へ戻る。前の段落の計測を取り消し、その時間と今の段落の経過を前の段落の続きとして数える
+ * (合計の経過時間は変わらない)
+ */
+export function previousParagraph() {
+  const s = useRehearsalStore.getState();
+  if ((s.status !== 'running' && s.status !== 'paused') || s.index === 0) return;
+  const back = s.laps[s.laps.length - 1] ?? 0;
+  useRehearsalStore.setState({
+    laps: s.laps.slice(0, -1),
+    index: s.index - 1,
+    segmentAccumMs: (back + currentSegmentSec(s)) * 1000,
+    segmentResumedAt: s.status === 'running' ? now() : null,
+  });
+}
+
+/** 予定時間(なければ推定) */
+export const plannedOf = (i: RehearsalItem | undefined) => i?.plannedSec ?? i?.estimatedSec ?? 0;
 
 /** 途中で終了する(現在の段落も計測に含める) */
 export function finishRehearsal() {

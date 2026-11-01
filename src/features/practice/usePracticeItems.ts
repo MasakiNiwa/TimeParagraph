@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { isSpoken } from '@/domain/estimate';
+import { paceSchedule } from '@/domain/pace';
 import { useDocumentStore } from '@/features/editor/documentStore';
 import { useEstimate } from '@/features/editor/useEstimate';
 import type { RehearsalItem } from '@/features/rehearsal/rehearsalStore';
@@ -8,6 +9,10 @@ import type { RehearsalItem } from '@/features/rehearsal/rehearsalStore';
 export function usePracticeItems() {
   const doc = useDocumentStore((s) => s.doc);
   const { estimate } = useEstimate();
+  const schedule = useMemo(
+    () => paceSchedule(doc?.blocks ?? [], estimate, doc?.targetDurationSec ?? null),
+    [doc, estimate],
+  );
   const items = useMemo<RehearsalItem[]>(
     () =>
       (doc?.blocks ?? []).filter(isSpoken).map((b) => {
@@ -18,9 +23,10 @@ export function usePracticeItems() {
           estimatedSec: (e?.speakSec ?? 0) + (e?.pauseSec ?? 0),
           pauseSec: e?.pauseSec ?? 0,
           weightedUnits: (e?.units ?? 0) / b.speedFactor,
+          plannedSec: schedule.byId.get(b.id),
         };
       }),
-    [doc, estimate],
+    [doc, estimate, schedule],
   );
-  return { doc, estimate, items };
+  return { doc, estimate, items, paceBasis: schedule.basis };
 }
