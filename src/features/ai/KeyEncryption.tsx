@@ -1,7 +1,142 @@
 import { Badge, Button, Group, PasswordInput, Stack, Text } from '@mantine/core';
-import { IconLock, IconLockOpen } from '@tabler/icons-react';
+import { IconFingerprint, IconLock, IconLockOpen } from '@tabler/icons-react';
 import { useState, type FormEvent } from 'react';
 import { useApiKeyStore } from './apiKeys';
+import { biometricAvailable } from './biometric';
+
+const errorMessage = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+/** 生体認証で解除するボタン(登録済みのときだけ表示) */
+function BiometricUnlockButton() {
+  const hasBio = useApiKeyStore((s) => s.bio !== null);
+  const unlockWithBiometric = useApiKeyStore((s) => s.unlockWithBiometric);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  if (!hasBio || !biometricAvailable()) return null;
+  return (
+    <Stack gap={4}>
+      <Button
+        variant="light"
+        leftSection={<IconFingerprint size={18} />}
+        loading={busy}
+        onClick={async () => {
+          setBusy(true);
+          setError(null);
+          try {
+            await unlockWithBiometric();
+          } catch (e) {
+            setError(errorMessage(e));
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        生体認証で解除
+      </Button>
+      {error && (
+        <Text size="xs" c="red">
+          {error}
+        </Text>
+      )}
+      <Text size="xs" c="dimmed" ta="center">
+        または、パスフレーズを入力
+      </Text>
+    </Stack>
+  );
+}
+
+/** 設定ページ: 生体認証の登録・解除 */
+function BiometricSettings() {
+  const hasBio = useApiKeyStore((s) => s.bio !== null);
+  const { enableBiometric, disableBiometric } = useApiKeyStore();
+  const [open, setOpen] = useState(false);
+  const [pass, setPass] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  if (!biometricAvailable()) return null;
+
+  if (hasBio)
+    return (
+      <Group gap="xs">
+        <Badge size="sm" variant="light" color="teal" leftSection={<IconFingerprint size={12} />}>
+          生体認証で解除できます
+        </Badge>
+        <Button
+          size="compact-xs"
+          variant="subtle"
+          color="gray"
+          onClick={() => {
+            if (
+              window.confirm('生体認証での解除をやめますか?(パスフレーズでは引き続き解除できます)')
+            )
+              disableBiometric();
+          }}
+        >
+          生体認証をやめる
+        </Button>
+      </Group>
+    );
+
+  if (!open)
+    return (
+      <Group>
+        <Button
+          size="xs"
+          variant="default"
+          leftSection={<IconFingerprint size={14} />}
+          onClick={() => setOpen(true)}
+        >
+          生体認証で解除できるようにする
+        </Button>
+      </Group>
+    );
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!pass || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await enableBiometric(pass);
+      setOpen(false);
+      setPass('');
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form onSubmit={(e) => void submit(e)}>
+      <Stack gap="xs">
+        <Text size="xs" c="dimmed">
+          指紋・顔認証・端末の PIN
+          など、この端末の認証(パスキー)で解除できるようにします。確認のため、今のパスフレーズを入力してください。対応していない端末・ブラウザもあります。
+        </Text>
+        <PasswordInput
+          label="今のパスフレーズ"
+          value={pass}
+          onChange={(e) => {
+            setPass(e.currentTarget.value);
+            setError(null);
+          }}
+          error={error}
+          autoComplete="current-password"
+          autoFocus
+        />
+        <Group gap="xs">
+          <Button type="submit" size="xs" loading={busy} disabled={!pass}>
+            登録する
+          </Button>
+          <Button size="xs" variant="subtle" color="gray" onClick={() => setOpen(false)}>
+            キャンセル
+          </Button>
+        </Group>
+      </Stack>
+    </form>
+  );
+}
 
 /** ロックを解除するフォーム。設定ページと AI ページで使う */
 export function UnlockForm({ autoFocus }: { autoFocus?: boolean }) {
@@ -24,6 +159,7 @@ export function UnlockForm({ autoFocus }: { autoFocus?: boolean }) {
   return (
     <form onSubmit={(e) => void submit(e)}>
       <Stack gap={6}>
+        <BiometricUnlockButton />
         <Group gap="xs" align="flex-start" wrap="nowrap">
           <PasswordInput
             style={{ flex: 1 }}
@@ -166,25 +302,28 @@ export function KeyEncryption() {
           }}
         />
       ) : vault ? (
-        <Group gap="xs">
-          <Button size="xs" variant="light" leftSection={<IconLock size={14} />} onClick={lock}>
-            今すぐロック
-          </Button>
-          <Button size="xs" variant="default" onClick={() => setMode('change')}>
-            パスフレーズを変更
-          </Button>
-          <Button
-            size="xs"
-            variant="subtle"
-            color="gray"
-            onClick={() => {
-              if (window.confirm('暗号化をやめて、API キーをそのまま保存しますか?'))
-                disableEncryption();
-            }}
-          >
-            暗号化をやめる
-          </Button>
-        </Group>
+        <Stack gap="xs">
+          <Group gap="xs">
+            <Button size="xs" variant="light" leftSection={<IconLock size={14} />} onClick={lock}>
+              今すぐロック
+            </Button>
+            <Button size="xs" variant="default" onClick={() => setMode('change')}>
+              パスフレーズを変更
+            </Button>
+            <Button
+              size="xs"
+              variant="subtle"
+              color="gray"
+              onClick={() => {
+                if (window.confirm('暗号化をやめて、API キーをそのまま保存しますか?'))
+                  disableEncryption();
+              }}
+            >
+              暗号化をやめる
+            </Button>
+          </Group>
+          <BiometricSettings />
+        </Stack>
       ) : (
         <Group>
           <Button
